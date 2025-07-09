@@ -22,14 +22,28 @@ const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     const key = e.target.dataset.key;
     if (!key || !file) return;
-    logger.info(`Uploading file for ${key}...`);
+    
+    logger.info(`Uploading file for ${key}. Original size: ${(file.size / 1024).toFixed(2)} KB`);
+
+    const options = {
+        maxSizeMB: 0.5, // Taille maximale de 500KB
+        maxWidthOrHeight: 1920, // Redimensionne si plus grand que 1920px
+        useWebWorker: true,
+        exifOrientation: true,
+        stripExif: true // Supprime les données EXIF
+    };
+
     try {
-        const base64String = await readFileAsBase64(file);
+        const compressedFile = await imageCompression(file, options);
+        logger.info(`Compressed file size: ${(compressedFile.size / 1024).toFixed(2)} KB`);
+
+        const base64String = await readFileAsBase64(compressedFile);
         const id = e.target.closest('[data-id]') ? parseInt(e.target.closest('[data-id]').dataset.id, 10) : null;
         handleStateUpdate(key, base64String, id);
+
     } catch (error) {
-        logger.error('File upload failed', error);
-        showConfirmation('Erreur', 'Le fichier n\'a pas pu être lu.');
+        logger.error('File compression or upload failed', error);
+        showConfirmation('Erreur', `La compression ou le téléversement du fichier a échoué : ${error.message}`);
     }
 };
 
@@ -175,7 +189,6 @@ export function attachEventListeners() {
 
     const debouncedInputHandler = debounce(e => {
         const target = e.target;
-        // --- CORRECTION CLÉ : Ignorer les inputs de type file dans ce handler ---
         if (target.matches('input[type=file]')) {
             return;
         }
