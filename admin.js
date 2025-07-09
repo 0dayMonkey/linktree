@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const editorSections = document.getElementById('editor-sections');
     const previewFrame = document.getElementById('preview-frame');
     const saveStatusEl = document.getElementById('save-status');
 
@@ -11,6 +10,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const readFileAsBase64 = (file) => {
         return new Promise((resolve, reject) => {
+            if (!file) {
+                return resolve(null);
+            }
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result);
             reader.onerror = (error) => reject(error);
@@ -21,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const handleFileUpload = async (e) => {
         const file = e.target.files[0];
         const key = e.target.dataset.key;
-        if (!file || !key) return;
+        if (!key) return;
 
         try {
             const base64String = await readFileAsBase64(file);
@@ -67,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const updateAndSave = (newState) => {
         state = newState;
-        if (previewFrame.contentWindow) {
+        if (previewFrame && previewFrame.contentWindow) {
             previewFrame.contentWindow.postMessage({ type: 'update', payload: state }, window.location.origin);
         }
         render();
@@ -75,7 +77,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const render = () => {
-        if (!state.profile) return;
+        const editorSections = document.getElementById('editor-sections');
+        if (!editorSections || !state.profile) return; // **CORRECTION CLÉ : GARDE-FOU**
+
         editorSections.innerHTML = `
             ${createProfileCard(state.profile)}
             ${createAppearanceCard(state.appearance)}
@@ -84,28 +88,30 @@ document.addEventListener('DOMContentLoaded', () => {
             ${createSettingsCard(state.seo)}
         `;
     };
-    
+
     const createFileUploadHTML = (key, currentSrc, label) => {
+        const uniqueId = `${key.replace('.', '-')}-${Date.now()}`;
         return `
             <div class="form-group">
                 <label>${label}</label>
-                <label class="file-upload-wrapper" for="${key}-upload">
+                <label class="file-upload-wrapper" for="${uniqueId}-upload">
                     ${currentSrc ? `<img src="${currentSrc}" alt="Aperçu" class="file-upload-preview">` : ''}
-                    <span class="file-upload-text">${currentSrc ? 'Cliquez pour changer' : '<strong>Cliquez pour téléverser</strong> ou glissez-déposez'}</span>
+                    <span class="file-upload-text">${currentSrc ? 'Cliquez pour changer' : '<strong>Cliquez pour téléverser</strong> une image'}</span>
                 </label>
-                <input type="file" id="${key}-upload" data-key="${key}" class="file-upload-input" accept="image/*">
+                <input type="file" id="${uniqueId}-upload" data-key="${key}" class="file-upload-input" accept="image/*">
             </div>
         `;
     };
-
+    
     const createColorInputHTML = (key, value, label) => {
+        const uniqueId = `${key.replace('.', '-')}-${Date.now()}`;
         return `
             <div class="form-group">
-                <label>${label}</label>
+                <label for="${uniqueId}-hex-input">${label}</label>
                 <div class="color-picker-wrapper">
-                    <input type="text" data-key="${key}" value="${value}" class="color-hex-input">
-                    <label class="color-swatch" style="background-color: ${value};" for="${key}-color-input"></label>
-                    <input type="color" id="${key}-color-input" data-key="${key}" value="${value}">
+                    <input type="text" id="${uniqueId}-hex-input" data-key="${key}" value="${value || ''}" class="color-hex-input">
+                    <label class="color-swatch" style="background-color: ${value || '#FFFFFF'};" for="${uniqueId}-color-input"></label>
+                    <input type="color" id="${uniqueId}-color-input" data-key="${key}" value="${value || '#FFFFFF'}">
                 </div>
             </div>
         `;
@@ -118,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${createFileUploadHTML('profile.pictureUrl', profile.pictureUrl, 'Photo de profil')}
                 <div class="form-group">
                     <label for="profile-title">Titre du profil</label>
-                    <input type="text" id="profile-title" data-key="profile.title" value="${profile.title}" placeholder="@VotreNom">
+                    <input type="text" id="profile-title" data-key="profile.title" value="${profile.title || ''}" placeholder="@VotreNom">
                 </div>
             </div>
         </div>
@@ -133,8 +139,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const bgControls = `
             ${bg.type === 'solid' ? createColorInputHTML('appearance.background.value', bg.value, 'Couleur de fond') : ''}
             ${bg.type === 'gradient' ? `<div class="form-grid">
-                ${createColorInputHTML('appearance.background.value.0', bgValue[0] || '#FFFFFF', 'Couleur 1')}
-                ${createColorInputHTML('appearance.background.value.1', bgValue[1] || '#000000', 'Couleur 2')}
+                ${createColorInputHTML('appearance.background.value.0', bgValue[0], 'Couleur 1')}
+                ${createColorInputHTML('appearance.background.value.1', bgValue[1], 'Couleur 2')}
             </div>` : ''}
             ${bg.type === 'image' ? createFileUploadHTML('appearance.background.value', bg.value, 'Image de fond') : ''}
         `;
@@ -143,9 +149,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="card">
             <div class="card-header"><h2>Apparence</h2></div>
             <div class="card-body">
-                <div class="form-group"><label>Police</label><select data-key="appearance.fontFamily">${fontOpts}</select></div>
-                ${createColorInputHTML('appearance.textColor', appearance.textColor, 'Couleur du texte de la page')}
-                <div class="form-group"><label>Type de fond</label><select data-key="appearance.background.type"><option value="solid" ${bg.type === 'solid' ? 'selected' : ''}>Couleur unie</option><option value="gradient" ${bg.type === 'gradient' ? 'selected' : ''}>Dégradé</option><option value="image" ${bg.type === 'image' ? 'selected' : ''}>Image</option></select></div>
+                <div class="form-group"><label for="font-select">Police</label><select id="font-select" data-key="appearance.fontFamily">${fontOpts}</select></div>
+                ${createColorInputHTML('appearance.textColor', appearance.textColor, 'Couleur du texte')}
+                <div class="form-group"><label for="bg-type-select">Type de fond</label><select id="bg-type-select" data-key="appearance.background.type"><option value="solid" ${bg.type === 'solid' ? 'selected' : ''}>Couleur unie</option><option value="gradient" ${bg.type === 'gradient' ? 'selected' : ''}>Dégradé</option><option value="image" ${bg.type === 'image' ? 'selected' : ''}>Image</option></select></div>
                 ${bgControls}
                 <hr style="border:none; border-top:1px solid var(--border-color); margin: 24px 0;">
                 <div class="form-grid">
@@ -157,39 +163,35 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     };
 
-    const createSocialsCard = (socials) => {
-         const itemsHTML = socials.map(item => `
-            <div class="item-container" data-id="${item.id}">
-                <div class="item-header"><span class="item-title">${item.network}</span><button data-action="delete" class="btn btn-danger delete-btn">X</button></div>
-            </div>
-        `).join('');
+    const createItemsCard = (title, items, itemRenderer, addAction, addLabel) => {
+        const itemsHTML = items.map(item => itemRenderer(item)).join('');
         return `
         <div class="card">
-            <div class="card-header"><div class="section-header"><h2>Icônes Sociales</h2><button data-action="add-social" class="btn btn-secondary">Ajouter</button></div></div>
-            <div class="card-body">${itemsHTML}</div>
+            <div class="card-header"><div class="section-header"><h2>${title}</h2><button data-action="${addAction}" class="btn btn-secondary">${addLabel}</button></div></div>
+            <div class="card-body" data-list-container="${title.toLowerCase()}">${itemsHTML.length > 0 ? itemsHTML : '<p class="empty-state">Aucun élément.</p>'}</div>
         </div>
         `;
     };
+    
+    const createSocialsCard = (socials) => createItemsCard('Icônes Sociales', socials, createSocialItemHTML, 'add-social', 'Ajouter');
+    const createLinksCard = (links) => createItemsCard('Liens & En-têtes', links, createLinkItemHTML, 'add-link', 'Ajouter un lien');
 
-    const createLinksCard = (links) => {
-         const itemsHTML = links.map(item => `
-            <div class="item-container" data-id="${item.id}">
-                <div class="item-header"><span class="item-title">${item.title}</span><button data-action="delete" class="btn btn-danger delete-btn">X</button></div>
-            </div>
-        `).join('');
-        return `
-        <div class="card">
-            <div class="card-header"><div class="section-header"><h2>Liens & En-têtes</h2><button data-action="add-link" class="btn btn-primary">Ajouter un lien</button></div></div>
-            <div class="card-body">${itemsHTML}</div>
+    const createSocialItemHTML = (item) => `
+        <div class="item-container" data-id="${item.id}">
+            <div class="item-header"><span class="item-title">${item.network}</span><button data-action="delete" class="btn btn-danger delete-btn">✖</button></div>
         </div>
-        `;
-    };
+    `;
+    const createLinkItemHTML = (item) => `
+        <div class="item-container" data-id="${item.id}">
+            <div class="item-header"><span class="item-title">${item.title}</span><button data-action="delete" class="btn btn-danger delete-btn">✖</button></div>
+        </div>
+    `;
 
     const createSettingsCard = (seo) => `
         <div class="card">
             <div class="card-header"><h2>Paramètres (SEO)</h2></div>
             <div class="card-body">
-                 <div class="form-group"><label>Titre de la page</label><input type="text" data-key="seo.title" value="${seo.title}"></div>
+                 <div class="form-group"><label for="seo-title">Titre de la page</label><input type="text" id="seo-title" data-key="seo.title" value="${seo.title || ''}"></div>
                  ${createFileUploadHTML('seo.faviconUrl', seo.faviconUrl, 'Favicon')}
             </div>
         </div>
@@ -198,7 +200,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleStateUpdate(key, value, id) {
         const newState = JSON.parse(JSON.stringify(state));
         if (id) {
-            const listName = state.links.some(i => i.id === id) ? 'links' : 'socials';
+            const isLink = newState.links.some(i => i.id === id);
+            const listName = isLink ? 'links' : 'socials';
             const item = newState[listName].find(i => i.id === id);
             if(item) item[key] = value;
         } else {
@@ -213,28 +216,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function attachEventListeners() {
-        editorSections.addEventListener('change', e => {
-            if (e.target.matches('.file-upload-input')) handleFileUpload(e);
-            else {
+        const editorPane = document.getElementById('editor-pane');
+        if (!editorPane) return;
+        
+        editorPane.addEventListener('change', e => {
+            if (e.target.matches('.file-upload-input')) {
+                handleFileUpload(e);
+            } else if (e.target.dataset.key) {
                 const key = e.target.dataset.key;
-                if (!key) return;
                 const value = e.target.value;
                 const id = e.target.closest('[data-id]') ? parseInt(e.target.closest('[data-id]').dataset.id, 10) : null;
                 handleStateUpdate(key, value, id);
             }
         });
         
-        editorSections.addEventListener('input', e => {
-            const key = e.target.dataset.key;
-            if (!key || e.target.matches('select, [type=file]')) return;
-             const value = e.target.value;
-             const id = e.target.closest('[data-id]') ? parseInt(e.target.closest('[data-id]').dataset.id, 10) : null;
-             handleStateUpdate(key, value, id);
+        editorPane.addEventListener('input', e => {
+            const target = e.target;
+            if (target.matches('select, [type=file], [type=color]') || !target.dataset.key) return;
+            handleStateUpdate(target.dataset.key, target.value, null);
         });
 
-        editorSections.addEventListener('click', e => {
+        editorPane.addEventListener('click', e => {
             const action = e.target.dataset.action;
             if (!action) return;
+
             const newState = JSON.parse(JSON.stringify(state));
             let stateChanged = true;
             if (action === 'add-link') newState.links.push({ type: 'link', id: Date.now(), title: 'Nouveau Lien', url: 'https://' });
@@ -243,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const itemEl = e.target.closest('[data-id]');
                 if (!itemEl || !window.confirm("Êtes-vous sûr(e) ?")) return;
                 const id = parseInt(itemEl.dataset.id, 10);
-                const isLink = state.links.some(i => i.id === id);
+                const isLink = newState.links.some(i => i.id === id);
                 const listName = isLink ? 'links' : 'socials';
                 newState[listName] = newState[listName].filter(item => item.id !== id);
             } else {
