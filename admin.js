@@ -6,6 +6,10 @@
  *
  * NEW FEATURE: All auto-saving has been removed in favor of a manual
  * "Save Changes" button for explicit control and better performance.
+ *
+ * FIXED: Re-implemented the deepMerge function to be correct and non-destructive.
+ * FIXED: Refactored all state modifications to use the central updateState
+ * function, ensuring consistency and proper save status tracking.
  */
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -13,14 +17,24 @@ document.addEventListener('DOMContentLoaded', () => {
     let editorPane, previewFrame, saveStatusEl, saveBtn, importInput, linksListEl;
 
     // --- UTILITIES ---
+    const isObject = (item) => (item && typeof item === 'object' && !Array.isArray(item));
+
     const deepMerge = (target, source) => {
-        for (const key in source) {
-            if (source[key] instanceof Object && key in target) {
-                Object.assign(source[key], deepMerge(target[key], source[key]));
-            }
+        let output = { ...target };
+        if (isObject(target) && isObject(source)) {
+            Object.keys(source).forEach(key => {
+                if (isObject(source[key])) {
+                    if (!(key in target)) {
+                        Object.assign(output, { [key]: source[key] });
+                    } else {
+                        output[key] = deepMerge(target[key], source[key]);
+                    }
+                } else {
+                    Object.assign(output, { [key]: source[key] });
+                }
+            });
         }
-        Object.assign(target || {}, source);
-        return target;
+        return output;
     };
 
     // --- STATE MANAGEMENT ---
@@ -132,43 +146,68 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- EVENT HANDLING ---
-    function handleEditorChange() {
-        updateSaveStatus(true);
-    }
-    
     function attachEventListeners() {
-        editorPane.addEventListener('input', handleEditorChange);
         saveBtn.addEventListener('click', saveAndPreview);
 
         editorPane.addEventListener('change', (e) => { // For selects, checkboxes
-            if (e.target.id === 'font-family-select') { state.appearance.fontFamily = e.target.value; }
-            if (e.target.id === 'background-type-select') {
-                const type = e.target.value; let value;
-                switch(type) { case 'solid': value = '#fafafa'; break; case 'gradient': value = ['#a8c0ff', '#3f2b96']; break; case 'image': value = ''; break; }
-                state.appearance.background = { type, value };
-                renderAppearanceEditor();
+            const { id, value, checked, type } = e.target;
+            if (id === 'font-family-select') { updateState({ appearance: { fontFamily: value }}); }
+            if (id === 'background-type-select') {
+                let bgValue;
+                switch(value) { case 'solid': bgValue = '#fafafa'; break; case 'gradient': bgValue = ['#a8c0ff', '#3f2b96']; break; case 'image': bgValue = ''; break; }
+                updateState({ appearance: { background: { type: value, value: bgValue } }});
+                renderAppearanceEditor(); // Re-render to show new controls
             }
-            if (e.target.id === 'btn-shadow') { state.appearance.button.hasShadow = e.target.checked; }
-            updateSaveStatus(true);
+            if (id === 'btn-shadow') { updateState({ appearance: { button: { hasShadow: checked }}}); }
         });
 
-        editorPane.addEventListener('input', (e) => { // For text inputs
-            const handlers = {'profile-pic-url': v => state.profile.pictureUrl=v, 'profile-title': v => state.profile.title=v, 'seo-title': v => state.seo.title=v, 'seo-description': v => state.seo.description=v, 'seo-favicon': v => state.seo.faviconUrl=v, 'text-color': v => state.appearance.textColor=v, 'bg-color1': v => state.appearance.background.value = state.appearance.background.type === 'gradient' ? [v, state.appearance.background.value[1]] : v, 'bg-color2': v => state.appearance.background.value[1] = v, 'bg-image-url': v => state.appearance.background.value=v, 'btn-bg-color': v => state.appearance.button.backgroundColor=v, 'btn-text-color': v => state.appearance.button.textColor=v, 'btn-radius': v => state.appearance.button.borderRadius=`${v}px`};
-            if (handlers[e.target.id]) { handlers[e.target.id](e.target.value); return; }
+        editorPane.addEventListener('input', (e) => { // For text, color, range inputs
+            const { id, value } = e.target;
+            const handlers = {
+                'profile-pic-url': v => updateState({ profile: { pictureUrl: v } }),
+                'profile-title':   v => updateState({ profile: { title: v } }),
+                'seo-title':       v => updateState({ seo: { title: v } }),
+                'seo-description': v => updateState({ seo: { description: v } }),
+                'seo-favicon':     v => updateState({ seo: { faviconUrl: v } }),
+                'text-color':      v => updateState({ appearance: { textColor: v } }),
+                'bg-color1':       v => {
+                    const newValue = state.appearance.background.type === 'gradient' ? [v, state.appearance.background.value[1]] : v;
+                    updateState({ appearance: { background: { value: newValue } } });
+                },
+                'bg-color2':       v => updateState({ appearance: { background: { value: [state.appearance.background.value[0], v] } } }),
+                'bg-image-url':    v => updateState({ appearance: { background: { value: v } } }),
+                'btn-bg-color':    v => updateState({ appearance: { button: { backgroundColor: v } } }),
+                'btn-text-color':  v => updateState({ appearance: { button: { textColor: v } } }),
+                'btn-radius':      v => updateState({ appearance: { button: { borderRadius: `${v}px` } } }),
+            };
+            if (handlers[id]) { handlers[id](value); return; }
 
             const itemEl = e.target.closest('[data-id]');
             if (itemEl) {
                 const id = parseInt(itemEl.dataset.id);
-                const keyMap = {'link-title':'title', 'link-url':'url', 'link-thumbnail':'thumbnailUrl', 'social-url-input':'url', 'link-schedule-start':'schedule.start', 'link-schedule-end':'schedule.end'};
-                for (const [cls, key] of Object.entries(keyMap)) {
-                    if (e.target.classList.contains(cls)) {
-                        const listName = itemEl.matches('.social-item, .social-item *') ? 'socials' : 'links';
-                        const item = state[listName].find(i => i.id === id);
-                        if (key.includes('.')) { const [p, c] = key.split('.'); item[p] = {...item[p], [c]: e.target.value}; } else { item[key] = e.target.value; }
-                        if(key === 'url' && listName === 'socials') item.network = detectSocialNetwork(e.target.value);
-                        break;
-                    }
+                const listName = itemEl.matches('.social-item, .social-item *') ? 'socials' : 'links';
+                const items = state[listName];
+                const itemIndex = items.findIndex(i => i.id === id);
+                if (itemIndex === -1) return;
+
+                const item = items[itemIndex];
+                let newItem = { ...item };
+
+                if (e.target.classList.contains('link-title')) newItem.title = value;
+                else if (e.target.classList.contains('link-url')) newItem.url = value;
+                else if (e.target.classList.contains('link-thumbnail')) newItem.thumbnailUrl = value;
+                else if (e.target.classList.contains('social-url-input')) {
+                    newItem.url = value;
+                    newItem.network = detectSocialNetwork(value);
+                } else if (e.target.classList.contains('link-schedule-start')) {
+                    newItem.schedule = { ...newItem.schedule, start: value };
+                } else if (e.target.classList.contains('link-schedule-end')) {
+                    newItem.schedule = { ...newItem.schedule, end: value };
                 }
+                
+                const newItems = [...items];
+                newItems[itemIndex] = newItem;
+                updateState({ [listName]: newItems });
             }
         });
         
@@ -179,12 +218,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!window.confirm("Are you sure you want to delete this item?")) return;
                 const id = parseInt(itemEl.dataset.id);
                 const listName = itemEl.matches('.social-item, .social-item *') ? 'socials' : 'links';
-                state[listName] = state[listName].filter(i => i.id !== id);
-                render(); updateSaveStatus(true);
+                const newItems = state[listName].filter(i => i.id !== id);
+                updateState({ [listName]: newItems });
+                render();
             }
-            if (target.id === 'add-link-btn') { state.links.push({type:'link', id:Date.now(), title:'New Link', url:'https://', clicks:0}); render(); updateSaveStatus(true); }
-            if (target.id === 'add-header-btn') { state.links.push({type:'header', id:Date.now(), title:'New Header'}); render(); updateSaveStatus(true); }
-            if (target.id === 'add-social-btn') { state.socials.push({id:Date.now(), network:'website', url:'https://'}); render(); updateSaveStatus(true); }
+            if (target.id === 'add-link-btn') {
+                const newLink = {type:'link', id:Date.now(), title:'New Link', url:'https://', clicks:0};
+                updateState({ links: [...state.links, newLink] });
+                render();
+            }
+            if (target.id === 'add-header-btn') {
+                const newHeader = {type:'header', id:Date.now(), title:'New Header'};
+                updateState({ links: [...state.links, newHeader] });
+                render();
+            }
+            if (target.id === 'add-social-btn') {
+                const newSocial = {id:Date.now(), network:'website', url:'https://'};
+                updateState({ socials: [...state.socials, newSocial] });
+                render();
+            }
         });
 
         document.getElementById('export-btn').addEventListener('click', () => {
@@ -201,8 +253,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     const importedState = JSON.parse(event.target.result);
                     if(window.confirm("Importing will overwrite your current configuration. Are you sure?")) {
+                        // Use the correct deepMerge to combine defaults with the imported state
                         state = deepMerge(JSON.parse(JSON.stringify(defaultData)), importedState);
-                        render(); updateSaveStatus(true);
+                        render();
+                        updateSaveStatus(true); // Mark as unsaved changes to prompt a save
                     }
                 } catch (err) { alert("Error reading or parsing the file."); }
             };
@@ -232,8 +286,8 @@ document.addEventListener('DOMContentLoaded', () => {
         linksListEl.addEventListener('drop', (e) => {
             e.preventDefault();
             const newOrderIds = [...linksListEl.querySelectorAll('.item-container')].map(el => parseInt(el.dataset.id));
-            state.links.sort((a,b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
-            updateSaveStatus(true);
+            const newLinks = newOrderIds.map(id => state.links.find(link => link.id === id));
+            updateState({ links: newLinks });
         });
     }
     
@@ -263,6 +317,3 @@ document.addEventListener('DOMContentLoaded', () => {
     
     init();
 });
-
-
-
