@@ -175,6 +175,10 @@ export function attachEventListeners() {
 
     const debouncedInputHandler = debounce(e => {
         const target = e.target;
+        // --- CORRECTION CLÉ : Ignorer les inputs de type file dans ce handler ---
+        if (target.matches('input[type=file]')) {
+            return;
+        }
         
         if (target.matches('.editable-content')) {
             const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
@@ -189,7 +193,6 @@ export function attachEventListeners() {
     document.addEventListener('selectionchange', showFormatToolbar);
     editorContent.addEventListener('touchend', () => setTimeout(showFormatToolbar, 100));
 
-    // --- CORRECTION CLÉ : Le 'change' ne s'occupe que du file-upload, le reste est géré par 'input' ---
     editorContent.addEventListener('change', e => {
         if (e.target.matches('.file-upload-input')) {
             handleFileUpload(e);
