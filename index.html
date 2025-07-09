@@ -33,27 +33,11 @@
         };
 
         function renderPage(data) {
-            const { seo, appearance, profile, socials, links } = data;
+            const { seo, appearance, profile, socials, links } = data || {};
+            if (!profile) return; // Ne rien faire si les données sont vides
 
-            // 1. Render SEO & Metadata
             document.title = seo?.title || profile?.title || 'Links';
-            let metaDesc = document.querySelector("meta[name='description']");
-            if (!metaDesc) {
-                metaDesc = document.createElement('meta');
-                metaDesc.name = 'description';
-                document.head.appendChild(metaDesc);
-            }
-            metaDesc.content = seo?.description || '';
-            
-            let favicon = document.querySelector("link[rel='icon']");
-            if (!favicon) {
-                favicon = document.createElement('link');
-                favicon.rel = 'icon';
-                document.head.appendChild(favicon);
-            }
-            favicon.href = seo?.faviconUrl || '';
 
-            // 2. Render Appearance
             if (appearance) {
                 let fontLink = document.getElementById('dynamic-font-link');
                 if (!fontLink) {
@@ -62,13 +46,19 @@
                     fontLink.rel = 'stylesheet';
                     document.head.appendChild(fontLink);
                 }
-                fontLink.href = `https://fonts.googleapis.com/css2?family=${appearance.fontFamily.replace(/"/g, "").replace(/ /g, "+")}:wght@400;600;700&display=swap`;
+                if(appearance.fontFamily) {
+                    fontLink.href = `https://fonts.googleapis.com/css2?family=${appearance.fontFamily.replace(/"/g, "").replace(/ /g, "+")}:wght@400;600;700&display=swap`;
+                }
 
                 let backgroundValue;
-                switch (appearance.background.type) {
-                    case 'image': backgroundValue = `url(${CSS.escape(appearance.background.value)})`; break;
-                    case 'gradient': backgroundValue = `linear-gradient(135deg, ${appearance.background.value[0]}, ${appearance.background.value[1]})`; break;
-                    default: backgroundValue = appearance.background.value;
+                const bg = appearance.background;
+                if (bg.type === 'image') {
+                    backgroundValue = `url(${CSS.escape(bg.value)})`;
+                } else if (bg.type === 'gradient') {
+                    const colors = Array.isArray(bg.value) ? bg.value : bg.value.split(',');
+                    backgroundValue = `linear-gradient(135deg, ${colors[0]}, ${colors[1]})`;
+                } else {
+                    backgroundValue = bg.value;
                 }
                 
                 const styles = `:root {
@@ -83,86 +73,75 @@
                 document.getElementById('dynamic-style-container').innerHTML = `<style>${styles}</style>`;
             }
 
-            // 3. Render Profile & Socials
             document.getElementById('profile-picture').src = profile?.pictureUrl || '';
             document.getElementById('profile-title').textContent = profile?.title || '';
             const socialContainer = document.getElementById('social-icons');
             socialContainer.innerHTML = '';
             socials?.forEach(social => {
                 if (!social.url || !ICONS[social.network]) return;
-                const a = document.createElement('a');
-                a.href = social.url;
-                a.target = '_blank';
-                a.title = social.network;
-                a.innerHTML = ICONS[social.network];
+                const a = document.createElement('a'); a.href = social.url; a.target = '_blank'; a.title = social.network; a.innerHTML = ICONS[social.network];
                 socialContainer.appendChild(a);
             });
 
-            // 4. Render Links & Headers
             const linksList = document.getElementById('links-list');
             linksList.innerHTML = '';
-            const now = new Date();
-            const visibleLinks = links?.filter(link => {
-                if (link.type === 'header') return true;
-                const hasStart = link.schedule?.start;
-                const hasEnd = link.schedule?.end;
-                if (!hasStart && !hasEnd) return true;
-                const start = hasStart ? new Date(link.schedule.start) : null;
-                const end = hasEnd ? new Date(link.schedule.end) : null;
-                if (start && now < start) return false;
-                if (end && now > end) return false;
-                return true;
-            });
-
-            visibleLinks?.forEach(item => {
+            links?.forEach(item => {
                 const li = document.createElement('li');
                 if (item.type === 'header') {
                     li.classList.add('list-header');
                     li.textContent = item.title;
                 } else {
                     const a = document.createElement('a');
-                    a.href = item.url;
-                    a.target = "_blank";
-                    a.dataset.linkId = item.id;
+                    a.href = item.url; a.target = "_blank"; a.dataset.linkId = item.id;
                     if (item.thumbnailUrl) {
                         a.classList.add('has-thumbnail');
                         a.innerHTML = `<img src="${item.thumbnailUrl}" alt="" class="link-thumbnail"><span>${item.title}</span>`;
-                    } else {
-                        a.textContent = item.title;
-                    }
+                    } else { a.textContent = item.title; }
                     li.appendChild(a);
                 }
                 linksList.appendChild(li);
             });
         }
 
-        function handleLinkClick(e) {
-            const linkEl = e.target.closest('a[data-link-id]');
-            if (!linkEl) return;
-            const linkId = parseInt(linkEl.dataset.linkId, 10);
-            const dataString = localStorage.getItem('linktreeData');
-            if (!dataString) return;
-            let data = JSON.parse(dataString);
-            const link = data.links.find(l => l.id === linkId);
-            if (link) {
-                link.clicks = (link.clicks || 0) + 1;
-                localStorage.setItem('linktreeData', JSON.stringify(data));
+        async function loadDataFromBackend() {
+            const container = document.querySelector('.container');
+            try {
+                const apiUrl = 'https://reliable-hamster-b1e205.netlify.app/.netlify/functions/get-data';
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+                renderPage(data);
+            } catch (error) {
+                console.error("Failed to load page data:", error);
+                container.innerHTML = `<p class="default-message">Could not load links. Please try again later.</p>`;
             }
         }
 
-        window.addEventListener('message', (event) => {
-            if (event.origin !== window.location.origin) return;
-            if (event.data.type === 'update') renderPage(event.data.payload);
-        });
+        // --- Logique principale ---
+        const isIframe = window.self !== window.top;
 
-        document.getElementById('links-list').addEventListener('click', handleLinkClick);
-
-        const initialData = localStorage.getItem('linktreeData');
-        if (initialData) {
-            renderPage(JSON.parse(initialData));
+        if (isIframe) {
+            // On est dans la prévisualisation de l'admin
+            console.log("Running in preview mode. Listening for messages.");
+            window.addEventListener('message', (event) => {
+                // IMPORTANT: On utilise l'URL du backend pour vérifier l'origine
+                // car l'admin peut être sur un domaine différent à l'avenir.
+                const adminOrigin = 'https://harib-naim.fr';
+                if (event.origin !== adminOrigin) {
+                    console.warn(`Message rejected from origin: ${event.origin}`);
+                    return;
+                }
+                if (event.data.type === 'update') {
+                    console.log("Preview received update:", event.data.payload);
+                    renderPage(event.data.payload);
+                }
+            });
         } else {
-            document.querySelector('.container').innerHTML = `<p class="default-message">This page has not been configured yet. Visit <a href="/admin.html">the admin page</a> to get started.</p>`;
+            // On est sur la page publique, chargée directement
+            console.log("Running in public mode. Fetching data from backend.");
+            document.addEventListener('DOMContentLoaded', loadDataFromBackend);
         }
+
     </script>
 </body>
 </html>
