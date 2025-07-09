@@ -42,9 +42,16 @@ async function handleContextMenuAction(e) {
     const id = parseInt(idStr, 10);
 
     if (action === 'edit') {
-        const selector = id ? `[data-id="${id}"]` : `#card-${type}`;
+        const selector = id ? `[data-id="${id}"]` : `#card-${type.toLowerCase()}`;
         const elementToFocus = document.querySelector(selector);
-        if (elementToFocus) elementToFocus.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (elementToFocus) {
+            elementToFocus.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // --- NOUVEAU : Application de l'indicateur visuel ---
+            elementToFocus.classList.add('highlight-indicator');
+            setTimeout(() => {
+                elementToFocus.classList.remove('highlight-indicator');
+            }, 1500); // La durée doit correspondre à l'animation CSS
+        }
     } else if (action === 'delete-context') {
         const confirmed = await showConfirmation('Êtes-vous sûr(e) ?', 'Cette action est irréversible.');
         if (!confirmed) return;
