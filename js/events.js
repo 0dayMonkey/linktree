@@ -133,10 +133,12 @@ export function attachEventListeners() {
         
         const range = selection.getRangeAt(0);
         const rect = range.getBoundingClientRect();
-        const editorRect = editorContent.parentElement.getBoundingClientRect();
+        
+        // --- CORRECTION CLÉ : Utiliser editorContent comme référence pour le scroll et le positionnement ---
+        const editorRect = editorContent.getBoundingClientRect();
 
         formatToolbar.style.display = 'flex';
-        formatToolbar.style.top = `${rect.top - editorRect.top + editorContent.parentElement.scrollTop - formatToolbar.offsetHeight - 5}px`;
+        formatToolbar.style.top = `${rect.top - editorRect.top + editorContent.scrollTop - formatToolbar.offsetHeight - 5}px`;
         formatToolbar.style.left = `${rect.left - editorRect.left + (rect.width / 2) - (formatToolbar.offsetWidth / 2)}px`;
     };
 
