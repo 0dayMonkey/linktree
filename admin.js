@@ -1,34 +1,18 @@
 /**
- * Linktree Admin Panel - Master Version
- * This script manages the entire admin interface, state, and interaction
- * with the live preview. It's structured for clarity and performance.
+ * Linktree Admin Panel - Master Version (Corrected with Manual Save)
+ *
+ * BUG FIX: All DOM element selections are now deferred until after the DOM
+ * is fully loaded, preventing the 'Cannot read properties of null' error.
+ *
+ * NEW FEATURE: All auto-saving has been removed in favor of a manual
+ * "Save Changes" button for explicit control and better performance.
  */
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- UTILITIES ---
-    /**
-     * Debounce function to limit the rate at which a function can fire.
-     * @param {Function} func The function to debounce.
-     * @param {number} delay The delay in milliseconds.
-     * @returns {Function} The debounced function.
-     */
-    const debounce = (func, delay) => {
-        let timeoutId;
-        return (...args) => {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-                func.apply(this, args);
-            }, delay);
-        };
-    };
+    // --- DOM ELEMENT VARIABLES ---
+    let editorPane, previewFrame, saveStatusEl, saveBtn, importInput, linksListEl;
 
-    /**
-     * Deeply merges a source object into a target object.
-     * This is used to safely update the state with partial data without losing nested properties.
-     * @param {object} target The target object.
-     * @param {object} source The source object.
-     * @returns {object} The merged object.
-     */
+    // --- UTILITIES ---
     const deepMerge = (target, source) => {
         for (const key in source) {
             if (source[key] instanceof Object && key in target) {
@@ -38,7 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
         Object.assign(target || {}, source);
         return target;
     };
-
 
     // --- STATE MANAGEMENT ---
     let state = {};
@@ -55,62 +38,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    /**
-     * Initializes the state by loading from localStorage or using defaults.
-     */
     const loadState = () => {
         const savedData = localStorage.getItem('linktreeData');
         state = deepMerge(JSON.parse(JSON.stringify(defaultData)), savedData ? JSON.parse(savedData) : {});
     };
 
-    /**
-     * Updates the global state with a partial state object and triggers a debounced save.
-     * @param {object} partialState - The part of the state to update.
-     */
     const updateState = (partialState) => {
         state = deepMerge(state, partialState);
-        debouncedSave();
+        updateSaveStatus(true); // Mark changes as dirty
     };
 
-
-    // --- DOM ELEMENTS & SAVE STATUS ---
-    const previewFrame = document.getElementById('preview-frame');
-    const saveStatusEl = document.getElementById('save-status');
-
-    /**
-     * Updates the save status indicator in the UI.
-     * @param {string} text The text to display (e.g., 'Saving...', 'Saved').
-     * @param {boolean} isSuccess Whether the status is a success message.
-     */
-    const setSaveStatus = (text, isSuccess = false) => {
-        saveStatusEl.textContent = text;
-        saveStatusEl.style.color = isSuccess ? 'var(--success-color)' : 'var(--text-secondary)';
-        saveStatusEl.style.opacity = '1';
+    // --- SAVE LOGIC ---
+    const updateSaveStatus = (hasUnsavedChanges) => {
+        if (!saveBtn || !saveStatusEl) return;
+        if (hasUnsavedChanges) {
+            saveBtn.disabled = false;
+            saveStatusEl.textContent = 'Unsaved changes';
+            saveStatusEl.style.color = 'var(--warning-color)';
+        } else {
+            saveBtn.disabled = true;
+            saveStatusEl.textContent = 'All changes saved';
+            saveStatusEl.style.color = 'var(--success-color)';
+        }
     };
 
-    /**
-     * Saves the current state to localStorage and sends it to the preview iframe.
-     */
     const saveAndPreview = () => {
         localStorage.setItem('linktreeData', JSON.stringify(state));
-        if (previewFrame.contentWindow) {
+        if (previewFrame && previewFrame.contentWindow) {
             previewFrame.contentWindow.postMessage({ type: 'update', payload: state }, window.location.origin);
         }
-        setSaveStatus('Saved', true);
-        setTimeout(() => saveStatusEl.style.opacity = '0', 2000);
+        updateSaveStatus(false); // Mark changes as saved
     };
 
-    const debouncedSave = debounce(() => {
-        setSaveStatus('Saving...');
-        saveAndPreview();
-    }, 500);
-
-
     // --- RENDER FUNCTIONS ---
-    /**
-     * Main render function to update the entire admin UI.
-     */
     const render = () => {
+        // This function sets up the editor based on the current state
         document.getElementById('profile-pic-url').value = state.profile.pictureUrl || '';
         document.getElementById('profile-title').value = state.profile.title || '';
         renderAppearanceEditor();
@@ -119,13 +81,10 @@ document.addEventListener('DOMContentLoaded', () => {
         renderList('links-editor-list', state.links, createLinkItemHTML, "No links or headers yet. Add one!");
     };
 
-    /**
-     * Generic function to render a list of items into a container.
-     */
     function renderList(containerId, items, htmlFactory, emptyMessage) {
         const container = document.getElementById(containerId);
         container.innerHTML = '';
-        if (items.length === 0) {
+        if (!items || items.length === 0) {
             container.innerHTML = `<div class="empty-state">${emptyMessage}</div>`;
             return;
         }
@@ -139,9 +98,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /**
-     * Dynamically builds and renders the complex 'Appearance' editor.
-     */
     function renderAppearanceEditor() {
         const container = document.getElementById('appearance-section');
         const fontOpts = Object.entries(FONT_OPTIONS).map(([n, v]) => `<option value="${v}" ${state.appearance.fontFamily === v ? 'selected' : ''}>${n}</option>`).join('');
@@ -152,20 +108,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${bg.type === 'gradient' ? `<div class="form-grid"><div class="form-group"><label>Color 1</label><input type="color" id="bg-color1" value="${bg.value[0]}"></div><div class="form-group"><label>Color 2</label><input type="color" id="bg-color2" value="${bg.value[1]}"></div></div>` : ''}
                 ${bg.type === 'image' ? `<div class="form-group"><label>Image URL</label><input type="text" id="bg-image-url" value="${bg.value}"></div>` : ''}
             </div>`;
-        container.innerHTML = `
-            <div class="form-group"><label>Font Family</label><select id="font-family-select">${fontOpts}</select></div>
-            <div class="form-group"><label>Page Text Color</label><input type="color" id="text-color" value="${state.appearance.textColor}"></div>
-            <fieldset class="fieldset"><legend>Background</legend><select id="background-type-select"><option value="solid" ${bg.type === 'solid' ? 'selected' : ''}>Solid Color</option><option value="gradient" ${bg.type === 'gradient' ? 'selected' : ''}>Gradient</option><option value="image" ${bg.type === 'image' ? 'selected' : ''}>Image</option></select>${bgControls}</fieldset>
-            <fieldset class="fieldset"><legend>Buttons</legend><div class="form-grid"><div class="form-group"><label>Background</label><input type="color" id="btn-bg-color" value="${state.appearance.button.backgroundColor}"></div><div class="form-group"><label>Text</label><input type="color" id="btn-text-color" value="${state.appearance.button.textColor}"></div></div><div class="form-group"><label>Corner Radius</label><input type="range" id="btn-radius" min="0" max="40" step="1" value="${parseInt(state.appearance.button.borderRadius)}"></div><div class="form-group"><label><input type="checkbox" id="btn-shadow" ${state.appearance.button.hasShadow ? 'checked' : ''}> Enable Shadow</label></div></fieldset>`;
+        container.innerHTML = `<div class="form-group"><label>Font Family</label><select id="font-family-select">${fontOpts}</select></div><div class="form-group"><label>Page Text Color</label><input type="color" id="text-color" value="${state.appearance.textColor}"></div><fieldset class="fieldset"><legend>Background</legend><select id="background-type-select"><option value="solid" ${bg.type === 'solid' ? 'selected' : ''}>Solid Color</option><option value="gradient" ${bg.type === 'gradient' ? 'selected' : ''}>Gradient</option><option value="image" ${bg.type === 'image' ? 'selected' : ''}>Image</option></select>${bgControls}</fieldset><fieldset class="fieldset"><legend>Buttons</legend><div class="form-grid"><div class="form-group"><label>Background</label><input type="color" id="btn-bg-color" value="${state.appearance.button.backgroundColor}"></div><div class="form-group"><label>Text</label><input type="color" id="btn-text-color" value="${state.appearance.button.textColor}"></div></div><div class="form-group"><label>Corner Radius</label><input type="range" id="btn-radius" min="0" max="40" step="1" value="${parseInt(state.appearance.button.borderRadius)}"></div><div class="form-group"><label><input type="checkbox" id="btn-shadow" ${state.appearance.button.hasShadow ? 'checked' : ''}> Enable Shadow</label></div></fieldset>`;
     }
 
     function renderSettingsEditor() {
         document.getElementById('settings-section').innerHTML = `<div class="form-group"><label>Page Title</label><input type="text" id="seo-title" value="${state.seo.title}"></div><div class="form-group"><label>Meta Description</label><input type="text" id="seo-description" value="${state.seo.description}"></div><div class="form-group"><label>Favicon URL</label><input type="text" id="seo-favicon" value="${state.seo.faviconUrl}"></div>`;
     }
 
-    /**
-     * Creates the HTML for a single link or header item in the editor.
-     */
     function createLinkItemHTML(item) {
         if (item.type === 'header') {
             return `<div class="item-container" draggable="true"><div class="drag-handle">☰</div><div class="item-content"><div class="item-header"><span>Header</span><button class="btn btn-danger delete-btn">Delete</button></div><div class="form-group"><input type="text" class="link-title" value="${item.title}"></div></div></div>`;
@@ -178,50 +127,51 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<div class="social-item"><div class="item-content"><div class="item-header"><span>Social Icon</span><button class="btn btn-danger delete-btn">Delete</button></div><div class="form-group"><label>URL</label><input type="text" class="social-url-input" value="${item.url}" placeholder="https://twitter.com/your-name"></div></div></div>`;
     }
 
+    const detectSocialNetwork = (url) => {
+        try { const hostname = new URL(url).hostname; return ['twitter', 'github', 'linkedin', 'instagram', 'youtube'].find(n => hostname.includes(n)) || 'website'; } catch { return 'website'; }
+    };
 
     // --- EVENT HANDLING ---
-    /**
-     * Centralized event handler for the entire editor pane.
-     */
-    function handleEditorInput(e) {
-        setSaveStatus('Typing...');
-        const handlers = {'profile-pic-url': v => ({profile:{pictureUrl:v}}), 'profile-title': v => ({profile:{title:v}}), 'seo-title': v => ({seo:{title:v}}), 'seo-description': v => ({seo:{description:v}}), 'seo-favicon': v => ({seo:{faviconUrl:v}}), 'text-color': v => ({appearance:{textColor:v}}), 'bg-color1': v => ({appearance:{background:{value: state.appearance.background.type === 'gradient' ? [v, state.appearance.background.value[1]] : v}}}), 'bg-color2': v => ({appearance:{background:{value:[state.appearance.background.value[0], v]}}}), 'bg-image-url': v => ({appearance:{background:{value:v}}}), 'btn-bg-color': v => ({appearance:{button:{backgroundColor:v}}}), 'btn-text-color': v => ({appearance:{button:{textColor:v}}}), 'btn-radius': v => ({appearance:{button:{borderRadius:`${v}px`}}}), 'btn-shadow': v => ({appearance:{button:{hasShadow:e.target.checked}}})};
-        if (handlers[e.target.id]) { updateState(handlers[e.target.id](e.target.value)); return; }
-
-        const itemEl = e.target.closest('[data-id]');
-        if (itemEl) {
-            const id = parseInt(itemEl.dataset.id);
-            const keyMap = {'link-title':'title', 'link-url':'url', 'link-thumbnail':'thumbnailUrl', 'social-url-input':'url', 'link-schedule-start':'schedule.start', 'link-schedule-end':'schedule.end'};
-            for (const [cls, key] of Object.entries(keyMap)) {
-                if (e.target.classList.contains(cls)) {
-                    const listName = itemEl.classList.contains('social-item') ? 'socials' : 'links';
-                    const items = state[listName].map(item => {
-                        if (item.id === id) {
-                            if (key.includes('.')) { const [p, c] = key.split('.'); item[p] = {...item[p], [c]: e.target.value}; }
-                            else { item[key] = e.target.value; }
-                            if(key === 'url' && listName === 'socials') item.network = detectSocialNetwork(e.target.value);
-                        }
-                        return item;
-                    });
-                    updateState({ [listName]: items });
-                    break;
-                }
-            }
-        }
+    function handleEditorChange() {
+        updateSaveStatus(true);
     }
     
     function attachEventListeners() {
-        const editorPane = document.getElementById('editor-pane');
-        editorPane.addEventListener('input', handleEditorInput);
-        editorPane.addEventListener('change', (e) => {
-            if (e.target.id === 'font-family-select') updateState({appearance: {fontFamily: e.target.value}});
+        editorPane.addEventListener('input', handleEditorChange);
+        saveBtn.addEventListener('click', saveAndPreview);
+
+        editorPane.addEventListener('change', (e) => { // For selects, checkboxes
+            if (e.target.id === 'font-family-select') { state.appearance.fontFamily = e.target.value; }
             if (e.target.id === 'background-type-select') {
                 const type = e.target.value; let value;
                 switch(type) { case 'solid': value = '#fafafa'; break; case 'gradient': value = ['#a8c0ff', '#3f2b96']; break; case 'image': value = ''; break; }
-                updateState({appearance: {background: {type, value}}});
+                state.appearance.background = { type, value };
                 renderAppearanceEditor();
             }
+            if (e.target.id === 'btn-shadow') { state.appearance.button.hasShadow = e.target.checked; }
+            updateSaveStatus(true);
         });
+
+        editorPane.addEventListener('input', (e) => { // For text inputs
+            const handlers = {'profile-pic-url': v => state.profile.pictureUrl=v, 'profile-title': v => state.profile.title=v, 'seo-title': v => state.seo.title=v, 'seo-description': v => state.seo.description=v, 'seo-favicon': v => state.seo.faviconUrl=v, 'text-color': v => state.appearance.textColor=v, 'bg-color1': v => state.appearance.background.value = state.appearance.background.type === 'gradient' ? [v, state.appearance.background.value[1]] : v, 'bg-color2': v => state.appearance.background.value[1] = v, 'bg-image-url': v => state.appearance.background.value=v, 'btn-bg-color': v => state.appearance.button.backgroundColor=v, 'btn-text-color': v => state.appearance.button.textColor=v, 'btn-radius': v => state.appearance.button.borderRadius=`${v}px`};
+            if (handlers[e.target.id]) { handlers[e.target.id](e.target.value); return; }
+
+            const itemEl = e.target.closest('[data-id]');
+            if (itemEl) {
+                const id = parseInt(itemEl.dataset.id);
+                const keyMap = {'link-title':'title', 'link-url':'url', 'link-thumbnail':'thumbnailUrl', 'social-url-input':'url', 'link-schedule-start':'schedule.start', 'link-schedule-end':'schedule.end'};
+                for (const [cls, key] of Object.entries(keyMap)) {
+                    if (e.target.classList.contains(cls)) {
+                        const listName = itemEl.matches('.social-item, .social-item *') ? 'socials' : 'links';
+                        const item = state[listName].find(i => i.id === id);
+                        if (key.includes('.')) { const [p, c] = key.split('.'); item[p] = {...item[p], [c]: e.target.value}; } else { item[key] = e.target.value; }
+                        if(key === 'url' && listName === 'socials') item.network = detectSocialNetwork(e.target.value);
+                        break;
+                    }
+                }
+            }
+        });
+        
         editorPane.addEventListener('click', (e) => {
             const target = e.target;
             const itemEl = target.closest('[data-id]');
@@ -229,23 +179,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!window.confirm("Are you sure you want to delete this item?")) return;
                 const id = parseInt(itemEl.dataset.id);
                 const listName = itemEl.matches('.social-item, .social-item *') ? 'socials' : 'links';
-                updateState({ [listName]: state[listName].filter(i => i.id !== id) });
-                render(); saveAndPreview();
+                state[listName] = state[listName].filter(i => i.id !== id);
+                render(); updateSaveStatus(true);
             }
-            if (target.id === 'add-link-btn') { updateState({links: [...state.links, {type:'link', id:Date.now(), title:'New Link', url:'https://', clicks:0}]}); render(); saveAndPreview(); }
-            if (target.id === 'add-header-btn') { updateState({links: [...state.links, {type:'header', id:Date.now(), title:'New Header'}]}); render(); saveAndPreview(); }
-            if (target.id === 'add-social-btn') { updateState({socials: [...state.socials, {id:Date.now(), network:'website', url:'https://'}]}); render(); saveAndPreview(); }
+            if (target.id === 'add-link-btn') { state.links.push({type:'link', id:Date.now(), title:'New Link', url:'https://', clicks:0}); render(); updateSaveStatus(true); }
+            if (target.id === 'add-header-btn') { state.links.push({type:'header', id:Date.now(), title:'New Header'}); render(); updateSaveStatus(true); }
+            if (target.id === 'add-social-btn') { state.socials.push({id:Date.now(), network:'website', url:'https://'}); render(); updateSaveStatus(true); }
         });
 
-        // --- Import/Export/Share/Drag&Drop Handlers ---
         document.getElementById('export-btn').addEventListener('click', () => {
             const dataStr = JSON.stringify(state, null, 2);
             const blob = new Blob([dataStr], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = 'linktree-data.json'; a.click(); URL.revokeObjectURL(url);
+            const a = document.createElement('a'); a.href = url; a.download = 'linktree-data.json'; a.click(); URL.revokeObjectURL(url);
         });
-        const importInput = document.getElementById('import-file-input');
         document.getElementById('import-btn').addEventListener('click', () => importInput.click());
         importInput.addEventListener('change', (e) => {
             const file = e.target.files[0]; if (!file) return;
@@ -255,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const importedState = JSON.parse(event.target.result);
                     if(window.confirm("Importing will overwrite your current configuration. Are you sure?")) {
                         state = deepMerge(JSON.parse(JSON.stringify(defaultData)), importedState);
-                        render(); saveAndPreview();
+                        render(); updateSaveStatus(true);
                     }
                 } catch (err) { alert("Error reading or parsing the file."); }
             };
@@ -264,39 +211,58 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('share-btn').addEventListener('click', () => {
             navigator.clipboard.writeText(window.location.origin + '/index.html').then(() => alert("Public URL copied to clipboard!"), () => alert("Could not copy URL."));
         });
+
         let draggedItem = null;
-        const linksListEl = document.getElementById('links-editor-list');
         linksListEl.addEventListener('dragstart', (e) => {
             draggedItem = e.target.closest('.item-container');
             if (draggedItem) setTimeout(() => draggedItem.classList.add('dragging'), 0);
         });
-        linksListEl.addEventListener('dragend', () => { if(draggedItem) draggedItem.classList.remove('dragging'); draggedItem = null; });
+        linksListEl.addEventListener('dragend', () => { if(draggedItem) { draggedItem.classList.remove('dragging'); draggedItem = null; } });
         linksListEl.addEventListener('dragover', (e) => {
             e.preventDefault();
             const afterElement = [...linksListEl.querySelectorAll('.item-container:not(.dragging)')].reduce((closest, child) => {
                 const box = child.getBoundingClientRect(); const offset = e.clientY - box.top - box.height / 2;
                 return (offset < 0 && offset > closest.offset) ? {offset, element:child} : closest;
             }, {offset:Number.NEGATIVE_INFINITY}).element;
-            if (afterElement == null) linksListEl.appendChild(draggedItem);
-            else linksListEl.insertBefore(draggedItem, afterElement);
+            if (draggedItem) {
+                if (afterElement == null) { linksListEl.appendChild(draggedItem); }
+                else { linksListEl.insertBefore(draggedItem, afterElement); }
+            }
         });
         linksListEl.addEventListener('drop', (e) => {
             e.preventDefault();
             const newOrderIds = [...linksListEl.querySelectorAll('.item-container')].map(el => parseInt(el.dataset.id));
-            const reorderedLinks = newOrderIds.map(id => state.links.find(link => link.id === id));
-            updateState({ links: reorderedLinks }); saveAndPreview();
+            state.links.sort((a,b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
+            updateSaveStatus(true);
         });
     }
     
-    const detectSocialNetwork = (url) => {
-        try { const hostname = new URL(url).hostname; return ['twitter', 'github', 'linkedin', 'instagram', 'youtube'].find(n => hostname.includes(n)) || 'website'; } catch { return 'website'; }
-    };
-
     // --- INITIALIZATION ---
-    (() => {
+    function init() {
+        // **BUG FIX**: Assign DOM elements AFTER the DOM is loaded.
+        editorPane = document.getElementById('editor-pane');
+        previewFrame = document.getElementById('preview-frame');
+        saveStatusEl = document.getElementById('save-status');
+        saveBtn = document.getElementById('save-btn');
+        importInput = document.getElementById('import-file-input');
+        linksListEl = document.getElementById('links-editor-list');
+
         loadState();
         render();
-        previewFrame.addEventListener('load', () => saveAndPreview());
+        updateSaveStatus(false); // Start with a clean slate
+        
+        previewFrame.addEventListener('load', () => {
+             // Initial sync of preview, does not count as a user change
+            if (previewFrame.contentWindow) {
+                previewFrame.contentWindow.postMessage({ type: 'update', payload: state }, window.location.origin);
+            }
+        });
+        
         attachEventListeners();
-    })();
+    }
+    
+    init();
 });
+
+
+
