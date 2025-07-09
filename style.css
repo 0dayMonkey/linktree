@@ -60,7 +60,7 @@ header {
 
 #profile-title {
     font-size: 1.25rem;
-    font-weight: 600;
+    font-weight: 700;
     margin: 0;
 }
 
@@ -91,8 +91,11 @@ header {
 }
 
 .links-list a {
-    display: block;
-    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    padding: 16px 20px;
     background-color: var(--button-bg);
     color: var(--button-text);
     text-decoration: none;
@@ -101,6 +104,25 @@ header {
     border-radius: 8px;
     box-shadow: var(--shadow);
     transition: transform var(--transition-speed), box-shadow var(--transition-speed), background-color var(--transition-speed);
+    text-align: center;
+    position: relative; /* For alignment */
+}
+
+.links-list a.has-thumbnail {
+    justify-content: flex-start; /* Align content to the left */
+}
+
+.link-thumbnail {
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+    object-fit: cover;
+}
+
+.links-list a.has-thumbnail span {
+    flex-grow: 1;
+    text-align: center; /* Center the text */
+    padding-right: 44px; /* Balance the space taken by the image */
 }
 
 .links-list a:hover {

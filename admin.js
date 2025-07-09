@@ -15,78 +15,52 @@ document.addEventListener('DOMContentLoaded', () => {
     // DATA STRUCTURE & DEFAULTS
     const defaultData = {
         theme: 'light-theme',
-        profile: {
-            pictureUrl: "https://via.placeholder.com/96",
-            title: "@YourName"
-        },
-        links: [
-            { id: 1, title: "My Website", url: "https://www.example.com" }
-        ],
-        socials: [
-            { id: 1, network: "twitter", url: "https://twitter.com/example" }
-        ]
+        profile: { pictureUrl: "", title: "" },
+        links: [],
+        socials: []
     };
 
     /**
-     * Helper to check for a valid URL format.
-     * @param {string} string - The URL to validate.
-     * @returns {boolean} - True if the URL is valid.
+     * Sends the current state to the preview iframe.
      */
-    const isValidUrl = (string) => {
-        try {
-            new URL(string);
-            return true;
-        } catch (_) {
-            return false;
-        }
-    };
+    function postStateToPreview() {
+        previewFrame.contentWindow.postMessage({
+            type: 'update',
+            payload: state
+        }, window.location.origin);
+    }
+    
+    /**
+     * Loads data, saves it, and updates the preview.
+     */
+    function saveAndPreview() {
+        localStorage.setItem('linktreeData', JSON.stringify(state));
+        postStateToPreview();
+    }
 
     /**
-     * Loads data from localStorage or initializes with default data.
+     * Loads data from localStorage, merging with existing click counts.
      */
     function loadData() {
         const savedData = localStorage.getItem('linktreeData');
         state = savedData ? JSON.parse(savedData) : JSON.parse(JSON.stringify(defaultData));
     }
 
-    /**
-     * Saves the current state to localStorage and reloads the preview.
-     */
-    function saveAndReload() {
-        localStorage.setItem('linktreeData', JSON.stringify(state));
-        previewFrame.contentWindow.location.reload();
-    }
-
-    /**
-     * Renders all editor components based on the current state.
-     */
+    /** Renders all editor components based on state. */
     function render() {
-        // Render Profile
         profilePicUrlInput.value = state.profile.pictureUrl || '';
         profileTitleInput.value = state.profile.title || '';
-
-        // Render Theme
         document.querySelector(`input[name="theme"][value="${state.theme}"]`).checked = true;
-
-        // Render Socials
         renderList(socialsEditorList, state.socials, createSocialItemHTML);
-
-        // Render Links
         renderList(linksEditorList, state.links, createLinkItemHTML);
     }
 
-    /**
-     * Generic function to render a list of items.
-     * @param {HTMLElement} container - The container element.
-     * @param {Array} items - The array of data items.
-     * @param {Function} htmlFactory - A function that creates the HTML for an item.
-     */
     function renderList(container, items, htmlFactory) {
         container.innerHTML = '';
-        items.forEach((item, index) => {
+        items.forEach(item => {
             const itemEl = document.createElement('div');
             itemEl.dataset.id = item.id;
-            itemEl.innerHTML = htmlFactory(item, index, items.length);
+            itemEl.innerHTML = htmlFactory(item);
             container.appendChild(itemEl);
         });
     }
@@ -94,117 +68,157 @@ document.addEventListener('DOMContentLoaded', () => {
     function createSocialItemHTML(item) {
         return `
             <div class="social-item">
-                <div class="form-group">
-                    <label>Network (e.g., twitter, instagram)</label>
-                    <input type="text" class="social-network-input" value="${item.network}">
+                <div class="item-content">
+                    <div class="form-group">
+                        <label>URL</label>
+                        <input type="text" class="social-url-input" value="${item.url}" placeholder="https://twitter.com/your-name">
+                    </div>
+                    <button class="btn btn-danger delete-btn">Delete Social</button>
                 </div>
-                <div class="form-group">
-                    <label>URL</label>
-                    <input type="text" class="social-url-input" value="${item.url}">
-                </div>
-                <button class="btn btn-danger delete-btn">Delete Social</button>
-            </div>
-        `;
+            </div>`;
     }
 
-    function createLinkItemHTML(item, index, total) {
+    function createLinkItemHTML(item) {
         return `
-            <div class="link-item">
-                <div class="link-item-header">
-                    <div class="link-reorder">
-                        <button class="btn-move move-up-btn" ${index === 0 ? 'disabled' : ''}>▲</button>
-                        <button class="btn-move move-down-btn" ${index === total - 1 ? 'disabled' : ''}>▼</button>
-                    </div>
-                    <div class="link-item-controls">
+            <div class="link-item" draggable="true">
+                <div class="drag-handle">☰</div>
+                <div class="item-content">
+                    <div class="item-header">
+                        <span class="analytics-display">📊 Clicks: ${item.clicks || 0}</span>
                         <button class="btn btn-danger delete-btn">Delete</button>
                     </div>
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input type="text" class="link-title-input" value="${item.title}">
+                    </div>
+                    <div class="form-group">
+                        <label>URL</label>
+                        <input type="text" class="link-url-input" value="${item.url}">
+                    </div>
+                    <div class="form-group">
+                        <label>Thumbnail URL (Optional)</label>
+                        <input type="text" class="link-thumbnail-input" value="${item.thumbnailUrl || ''}" placeholder="https://example.com/image.png">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Title</label>
-                    <input type="text" class="link-title-input" value="${item.title}">
-                </div>
-                <div class="form-group">
-                    <label>URL</label>
-                    <input type="text" class="link-url-input" value="${item.url}">
-                </div>
-            </div>
-        `;
+            </div>`;
     }
 
-    // EVENT HANDLERS
-    function handleGenericInput(e, listName, key) {
-        const itemEl = e.target.closest(`[data-id]`);
+    function detectSocialNetwork(url) {
+        const networks = ['twitter', 'github', 'linkedin', 'instagram', 'youtube'];
+        try {
+            const hostname = new URL(url).hostname;
+            return networks.find(net => hostname.includes(net)) || 'website';
+        } catch {
+            return 'website';
+        }
+    }
+
+    // --- EVENT HANDLERS ---
+    function handleGenericUpdate(e, listName, key) {
+        const itemEl = e.target.closest('[data-id]');
         if (!itemEl) return;
         const itemId = parseInt(itemEl.dataset.id);
         const item = state[listName].find(i => i.id === itemId);
-        if(item) {
+        if (item) {
             item[key] = e.target.value;
-            // URL Validation Feedback
-            if(key === 'url') {
-                e.target.classList.toggle('invalid', !isValidUrl(e.target.value));
+            if(listName === 'socials' && key === 'url') {
+                item.network = detectSocialNetwork(e.target.value);
             }
-            saveAndReload();
+            saveAndPreview();
         }
     }
-    
+
     function handleGenericDelete(e, listName) {
-        if (!e.target.classList.contains('delete-btn')) return;
-        const itemEl = e.target.closest('[data-id]');
-        if (!itemEl) return;
-        const itemId = parseInt(itemEl.dataset.id);
-        state[listName] = state[listName].filter(item => item.id !== itemId);
-        render();
-        saveAndReload();
-    }
-    
-    function handleGenericAdd(listName, defaultItem) {
-        const newId = state[listName].length > 0 ? Math.max(...state[listName].map(l => l.id)) + 1 : 1;
-        state[listName].push({ ...defaultItem, id: newId });
-        render();
-        saveAndReload();
-    }
-
-    function handleMoveLink(e) {
-        const isUp = e.target.classList.contains('move-up-btn');
-        const isDown = e.target.classList.contains('move-down-btn');
-        if (!isUp && !isDown) return;
-
-        const itemEl = e.target.closest('[data-id]');
-        if (!itemEl) return;
-
-        const linkId = parseInt(itemEl.dataset.id);
-        const index = state.links.findIndex(l => l.id === linkId);
-
-        if ((isUp && index > 0) || (isDown && index < state.links.length - 1)) {
-            const newIndex = isUp ? index - 1 : index + 1;
-            // Swap elements in the array
-            [state.links[index], state.links[newIndex]] = [state.links[newIndex], state.links[index]];
+        if (e.target.classList.contains('delete-btn')) {
+            const itemEl = e.target.closest('[data-id]');
+            const itemId = parseInt(itemEl.dataset.id);
+            state[listName] = state[listName].filter(i => i.id !== itemId);
             render();
-            saveAndReload();
+            saveAndPreview();
         }
     }
 
-    // INITIALIZATION
+    function handleGenericAdd(listName, defaultItem) {
+        const newId = Date.now(); // Using timestamp for unique ID
+        state[listName].push({ id: newId, ...defaultItem });
+        render();
+        saveAndPreview();
+    }
+    
+    // --- DRAG AND DROP LOGIC ---
+    let draggedItem = null;
+    linksEditorList.addEventListener('dragstart', (e) => {
+        draggedItem = e.target.closest('.link-item');
+        if (draggedItem) {
+            setTimeout(() => e.target.classList.add('dragging'), 0);
+        }
+    });
+
+    linksEditorList.addEventListener('dragend', (e) => {
+        if(draggedItem){
+            draggedItem.classList.remove('dragging');
+            draggedItem = null;
+        }
+    });
+
+    linksEditorList.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const afterElement = getDragAfterElement(linksEditorList, e.clientY);
+        const currentDragged = document.querySelector('.dragging');
+        if (afterElement == null) {
+            linksEditorList.appendChild(currentDragged);
+        } else {
+            linksEditorList.insertBefore(currentDragged, afterElement);
+        }
+    });
+
+    linksEditorList.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const newOrderIds = Array.from(linksEditorList.querySelectorAll('.link-item')).map(el => parseInt(el.dataset.id));
+        state.links.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
+        saveAndPreview();
+    });
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.link-item:not(.dragging)')];
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    // --- INITIALIZATION ---
     function init() {
         loadData();
         render();
-        saveAndReload();
+
+        // Wait for iframe to be loaded before the first data post
+        previewFrame.addEventListener('load', () => {
+            saveAndPreview();
+        });
 
         // Attach event listeners
-        profilePicUrlInput.addEventListener('input', e => { state.profile.pictureUrl = e.target.value; saveAndReload(); });
-        profileTitleInput.addEventListener('input', e => { state.profile.title = e.target.value; saveAndReload(); });
-        themeSelector.addEventListener('change', e => { state.theme = e.target.value; saveAndReload(); });
+        profilePicUrlInput.addEventListener('input', e => { state.profile.pictureUrl = e.target.value; saveAndPreview(); });
+        profileTitleInput.addEventListener('input', e => { state.profile.title = e.target.value; saveAndPreview(); });
+        themeSelector.addEventListener('change', e => { state.theme = e.target.value; saveAndPreview(); });
 
-        addLinkBtn.addEventListener('click', () => handleGenericAdd('links', { title: 'New Link', url: 'https://' }));
-        addSocialBtn.addEventListener('click', () => handleGenericAdd('socials', { network: 'github', url: 'https://' }));
-        
-        linksEditorList.addEventListener('input', e => handleGenericInput(e, 'links', e.target.classList.contains('link-title-input') ? 'title' : 'url'));
-        socialsEditorList.addEventListener('input', e => handleGenericInput(e, 'socials', e.target.classList.contains('social-network-input') ? 'network' : 'url'));
+        addLinkBtn.addEventListener('click', () => handleGenericAdd('links', { title: 'New Link', url: 'https://', clicks: 0, thumbnailUrl: '' }));
+        addSocialBtn.addEventListener('click', () => handleGenericAdd('socials', { network: '', url: 'https://' }));
 
-        linksEditorList.addEventListener('click', handleGenericDelete.bind(null, 'links'));
-        socialsEditorList.addEventListener('click', handleGenericDelete.bind(null, 'socials'));
+        linksEditorList.addEventListener('input', e => {
+            if (e.target.classList.contains('link-title-input')) handleGenericUpdate(e, 'links', 'title');
+            if (e.target.classList.contains('link-url-input')) handleGenericUpdate(e, 'links', 'url');
+            if (e.target.classList.contains('link-thumbnail-input')) handleGenericUpdate(e, 'links', 'thumbnailUrl');
+        });
+        socialsEditorList.addEventListener('input', e => handleGenericUpdate(e, 'socials', 'url'));
 
-        linksEditorList.addEventListener('click', handleMoveLink);
+        linksEditorList.addEventListener('click', e => handleGenericDelete(e, 'links'));
+        socialsEditorList.addEventListener('click', e => handleGenericDelete(e, 'socials'));
     }
 
     init();
