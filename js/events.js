@@ -142,7 +142,7 @@ export function attachEventListeners() {
 
         let top = rect.top - editorRect.top + editorContent.scrollTop - formatToolbar.offsetHeight - 4;
         if (top < editorContent.scrollTop) {
-            top = rect.bottom - editorRect.top + editorContent.scrollTop + 8;
+            top = rect.bottom - editorRect.top + editorContent.scrollTop + 4;
         }
         const left = rect.left - editorRect.left + (rect.width / 2) - (formatToolbar.offsetWidth / 2);
 
