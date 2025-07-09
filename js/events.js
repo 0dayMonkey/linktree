@@ -21,10 +21,11 @@ const debounce = (func, delay) => {
 const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     const key = e.target.dataset.key;
-    if (!key) return;
-    const id = e.target.closest('[data-id]') ? parseInt(e.target.closest('[data-id]').dataset.id, 10) : null;
+    if (!key || !file) return;
+    logger.info(`Uploading file for ${key}...`);
     try {
         const base64String = await readFileAsBase64(file);
+        const id = e.target.closest('[data-id]') ? parseInt(e.target.closest('[data-id]').dataset.id, 10) : null;
         handleStateUpdate(key, base64String, id);
     } catch (error) {
         logger.error('File upload failed', error);
@@ -138,24 +139,17 @@ export function attachEventListeners() {
 
         const range = selection.getRangeAt(0);
         const rect = range.getBoundingClientRect();
-        const editorPane = document.getElementById('editor-pane');
-        const editorPaneRect = editorPane.getBoundingClientRect();
+        const editorRect = editorContent.getBoundingClientRect();
 
-        let top = rect.top - editorPaneRect.top - formatToolbar.offsetHeight - 4; // 4px au-dessus
-        if (top < 0) { // Si hors de l'écran (en haut)
-            top = rect.bottom - editorPaneRect.top + 4; // 4px en dessous
+        let top = rect.top - editorRect.top + editorContent.scrollTop - formatToolbar.offsetHeight;
+        if (top < editorContent.scrollTop) {
+            top = rect.bottom - editorRect.top + editorContent.scrollTop;
         }
-        
-        let left = rect.left - editorPaneRect.left + (rect.width / 2) - (formatToolbar.offsetWidth / 2);
-        
-        // Empêcher la barre d'outils de déborder sur les côtés
-        left = Math.max(0, left);
-        left = Math.min(left, editorPaneRect.width - formatToolbar.offsetWidth);
+        const left = rect.left - editorRect.left + (rect.width / 2) - (formatToolbar.offsetWidth / 2);
 
         formatToolbar.style.top = `${top}px`;
-        formatToolbar.style.left = `${left}px`;
+        formatToolbar.style.left = `${Math.max(0, left)}px`;
         formatToolbar.classList.add('visible');
-        logger.info('Formatting toolbar shown for selection.');
     };
     
     formatToolbar.addEventListener('mousedown', (e) => {
@@ -190,15 +184,14 @@ export function attachEventListeners() {
     }, 400);
 
     editorContent.addEventListener('input', debouncedInputHandler);
-    
-    // --- CORRECTION CLÉ : Utiliser touchend pour les mobiles et selectionchange comme fallback ---
     document.addEventListener('selectionchange', showFormatToolbar);
     editorContent.addEventListener('touchend', () => setTimeout(showFormatToolbar, 100));
 
-
+    // --- CORRECTION CLÉ : Utiliser if/else if pour séparer la logique de l'upload ---
     editorContent.addEventListener('change', e => {
-        if (e.target.matches('.file-upload-input')) return handleFileUpload(e);
-        if (e.target.dataset.key) {
+        if (e.target.matches('.file-upload-input')) {
+            handleFileUpload(e);
+        } else if (e.target.dataset.key) {
             const id = e.target.closest('[data-id]') ? parseInt(e.target.closest('[data-id]').dataset.id, 10) : null;
             handleStateUpdate(e.target.dataset.key, e.target.value, id);
         }
