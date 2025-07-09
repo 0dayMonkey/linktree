@@ -9,24 +9,81 @@ const previewFrame = document.getElementById('preview-frame');
 export function render(state) {
     if (!editorContent || !state.profile) return;
     
-    const focusedElementId = document.activeElement.id;
+    const focusedElement = document.activeElement;
+    const selection = window.getSelection ? window.getSelection() : null;
+    let selectionInfo = null;
+    if (selection && selection.rangeCount > 0 && focusedElement && focusedElement.isContentEditable) {
+        const range = selection.getRangeAt(0);
+        selectionInfo = {
+            element: focusedElement,
+            start: range.startOffset,
+            end: range.endOffset,
+        };
+    }
+
     const scrollPosition = editorContent.scrollTop;
 
     editorContent.innerHTML = `
-        ${createProfileCard(state.profile)}
+        ${createProfileCard(state.profile, state.appearance)}
         ${createAppearanceCard(state.appearance)}
         ${createItemsCard('Icônes Sociales', state.socials || [], createSocialItemHTML, 'add-social', 'Ajouter une icône')}
         ${createItemsCard('Liens & En-têtes', state.links || [], createLinkItemHTML, 'add-link', 'Ajouter un lien', 'add-header', 'Ajouter un en-tête')}
         ${createSettingsCard(state.seo)}
     `;
     
-    if (focusedElementId) {
-        const reFocusedElement = document.getElementById(focusedElementId);
+    if (selectionInfo && selectionInfo.element) {
+        const newElement = document.getElementById(selectionInfo.element.id);
+        if (newElement) {
+            newElement.focus();
+            const newRange = document.createRange();
+            // Ensure child nodes exist before setting range
+            if (newElement.childNodes.length > 0) {
+                 const textNode = newElement.firstChild;
+                 // Clamp offsets to the actual length of the text node
+                 const startOffset = Math.min(selectionInfo.start, textNode.length);
+                 const endOffset = Math.min(selectionInfo.end, textNode.length);
+                 newRange.setStart(textNode, startOffset);
+                 newRange.setEnd(textNode, endOffset);
+                 selection.removeAllRanges();
+                 selection.addRange(newRange);
+            }
+        }
+    } else if (focusedElement) {
+        const reFocusedElement = document.getElementById(focusedElement.id);
         if (reFocusedElement) {
             reFocusedElement.focus();
         }
     }
+    
     editorContent.scrollTop = scrollPosition;
+}
+
+
+export function renderSkeleton() {
+    return `
+        <div class="card">
+            <div class="card-header skeleton" style="height: 53px;"></div>
+            <div class="card-body">
+                <div class="skeleton skeleton-avatar"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text skeleton-text-short"></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header skeleton" style="height: 53px;"></div>
+            <div class="card-body">
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text skeleton-text-short"></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header skeleton" style="height: 53px;"></div>
+            <div class="card-body">
+                <div class="skeleton skeleton-item"></div>
+            </div>
+        </div>
+    `;
 }
 
 export function showConfirmation(title, text) {
@@ -72,7 +129,8 @@ export function hideContextMenu() {
 
 function createFileUploadHTML(key, currentSrc, label, id = '', accept = 'image/*') {
     const uniqueId = `upload-${key.replace(/\./g, '-')}-${id || 'main'}`;
-    return `<div class="form-group">
+    const closestId = id ? `data-id="${id}"` : '';
+    return `<div class="form-group" ${closestId}>
         <label>${label}</label>
         <label class="file-upload-wrapper" for="${uniqueId}">
             ${currentSrc && currentSrc.startsWith('data:image') ? `<img src="${currentSrc}" alt="Aperçu" class="file-upload-preview">` : ''}
@@ -87,7 +145,7 @@ function createColorInputHTML(key, value, label) {
     return `<div class="form-group">
             <label for="${uniqueId}-hex">${label}</label>
             <div class="color-picker-wrapper">
-                <input type="text" id="${uniqueId}-hex" data-key="${key}" value="${value || ''}" class="color-hex-input">
+                <input type="text" id="${uniqueId}-hex" data-key="${key}" value="${value || ''}" class="color-hex-input" maxlength="7">
                 <label class="color-swatch" style="background-color: ${value || '#FFFFFF'};" for="${uniqueId}-picker"></label>
                 <input type="color" id="${uniqueId}-picker" data-key="${key}" value="${value || '#FFFFFF'}">
             </div>
@@ -99,16 +157,22 @@ function createCustomSelectHTML(key, options, selectedValue, { id = null, type =
 
     if (selectedValue) {
         if (type === 'font') {
-            const font = Object.values(options).find(f => f.value === selectedValue);
-            if (font) {
-                selectedDisplay = `<span style="font-family: ${font.value};">${font.name}</span>`;
+            const fontName = Object.keys(FONT_OPTIONS).find(name => FONT_OPTIONS[name] === selectedValue);
+            if (fontName) {
+                 selectedDisplay = `<span style="font-family: ${selectedValue};">${fontName}</span>`;
             }
         } else if (type === 'social') {
             const socialName = options[selectedValue];
             if (socialName) {
                 selectedDisplay = `<div>${ICONS[selectedValue] || ''}<span>${socialName}</span></div>`;
             }
-        } else {
+        } else if (type === 'gradient'){
+            const gradient = Object.values(options).find(g => g.value === selectedValue);
+            if(gradient) {
+                selectedDisplay = `<span>${gradient.name}</span>`;
+            }
+        }
+        else {
              const option = options[selectedValue];
              selectedDisplay = option ? (option.name || option) : selectedValue;
         }
@@ -117,18 +181,25 @@ function createCustomSelectHTML(key, options, selectedValue, { id = null, type =
     const optionsHTML = Object.entries(options).map(([val, display]) => {
         let finalDisplay;
         let style = '';
-        const isSelected = type === 'font' ? selectedValue === display.value : selectedValue === val;
-
+        let valueAttr = val;
+        
         if (type === 'font') {
-            finalDisplay = display.name;
-            style = `font-family: ${display.value};`;
+            finalDisplay = val; // The key is the font name
+            style = `font-family: '${val}', sans-serif;`;
+            valueAttr = display; // The value is the font-family string
         } else if (type === 'social') {
             finalDisplay = `<span>${display}</span>`;
             if (ICONS[val]) finalDisplay = `${ICONS[val]}${finalDisplay}`;
-        } else {
+        } else if (type === 'gradient'){
+            finalDisplay = display.name;
+            valueAttr = display.value;
+        }
+        else {
              finalDisplay = display.name || display;
         }
-        return `<div data-value="${val}" style="${style}" class="${isSelected ? 'same-as-selected' : ''}">${finalDisplay}</div>`;
+        
+        const isSelected = selectedValue === valueAttr;
+        return `<div data-value="${valueAttr}" style="${style}" class="${isSelected ? 'same-as-selected' : ''}">${finalDisplay}</div>`;
     }).join('');
 
     const dataIdAttr = id ? `data-id="${id}"` : '';
@@ -141,18 +212,24 @@ function createCustomSelectHTML(key, options, selectedValue, { id = null, type =
     `;
 }
 
-function createProfileCard(profile) {
+function createProfileCard(profile, appearance) {
+    const layoutOptions = { circle: "Cercle", full: "Pleine largeur" };
     return `<div class="card" id="card-profile">
         <div class="card-header"><h2>Profil</h2></div>
         <div class="card-body">
             ${createFileUploadHTML('profile.pictureUrl', profile.pictureUrl, 'Photo de profil')}
             <div class="form-group">
-                <label for="profile-title">Titre du profil</label>
-                <div id="profile-title" data-key="profile.title" class="editable-content" contenteditable="true" data-placeholder="@VotreNom">${profile.title || ''}</div>
+                <label>Mise en page de la photo</label>
+                ${createCustomSelectHTML('appearance.pictureLayout', layoutOptions, appearance.pictureLayout, { type: 'default' })}
+            </div>
+            <hr style="border:none; border-top:1px solid var(--border-color); margin: 24px 0;">
+            <div class="form-group">
+                <label for="profile-title-input">Titre du profil</label>
+                <div id="profile-title-input" data-key="profile.title" class="editable-content" contenteditable="true" data-placeholder="@VotreNom">${profile.title || ''}</div>
             </div>
             <div class="form-group">
-                <label for="profile-description">Description</label>
-                <div id="profile-description" data-key="profile.description" class="editable-content" contenteditable="true" data-placeholder="Votre bio...">${profile.description || ''}</div>
+                <label for="profile-description-input">Description</label>
+                <div id="profile-description-input" data-key="profile.description" class="editable-content" contenteditable="true" data-placeholder="Votre bio...">${profile.description || ''}</div>
             </div>
         </div>
     </div>`;
@@ -160,7 +237,6 @@ function createProfileCard(profile) {
 
 function createAppearanceCard(appearance) {
     const bg = appearance.background || {};
-    const fontOptions = Object.entries(FONT_OPTIONS).reduce((acc, [name, value]) => ({ ...acc, [value]: { name, value } }), {});
     const bgTypeOptions = { solid: "Couleur unie", gradient: "Dégradé", image: "Image" };
 
     const bgControls = () => {
@@ -174,7 +250,7 @@ function createAppearanceCard(appearance) {
     return `<div class="card" id="card-appearance">
         <div class="card-header"><h2>Apparence</h2></div>
         <div class="card-body">
-            <div class="form-group"><label>Police</label>${createCustomSelectHTML('appearance.fontFamily', fontOptions, appearance.fontFamily, { type: 'font' })}</div>
+            <div class="form-group"><label>Police</label>${createCustomSelectHTML('appearance.fontFamily', FONT_OPTIONS, appearance.fontFamily, { type: 'font' })}</div>
             ${createColorInputHTML('appearance.textColor', appearance.textColor, 'Couleur du texte')}
             <div class="form-group"><label>Type de fond</label>${createCustomSelectHTML('appearance.background.type', bgTypeOptions, bg.type, { type: 'bg_type'})}</div>
             <div id="background-controls">${bgControls()}</div>
@@ -186,6 +262,7 @@ function createAppearanceCard(appearance) {
         </div>
     </div>`;
 }
+
 
 function createItemsCard(title, items, itemRenderer, addAction1, addLabel1, addAction2, addLabel2) {
     const itemsHTML = (items || []).map(item => itemRenderer(item)).join('');

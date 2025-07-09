@@ -66,6 +66,9 @@
             if (seo?.faviconUrl) setFavicon(seo.faviconUrl);
 
             if (appearance) {
+                const header = document.querySelector('header');
+                header.className = `layout-${appearance.pictureLayout || 'circle'}`;
+
                 let fontLink = document.getElementById('dynamic-font-link');
                 if (!fontLink) {
                     fontLink = document.createElement('link');
