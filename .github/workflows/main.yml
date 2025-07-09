@@ -1,18 +1,2 @@
-on: push
-name: 🫁 Deploy website on push
-jobs: 
-  web-deploy:
-    name: ✅ Deploy
-    runs-on: ubuntu-latest
-    steps:
-    - name: 📩 Get latest code
-      uses: action/checkout@v3
-
-    - name: 📁 Synch files
-      uses: SamKirkland/FTP-Deploy-Action@4.3.4
-      with:
-        server: ftp.harib-naim.fr
-        username: ${{ secrets.FTPUSERNAME }}
-        password: ${{secrets.FTPPASSWORD }}
-        protocol: ftps
-        server-dir: /linktree
+- name: FTP Deploy
+  uses: SamKirkland/FTP-Deploy-Action@v4.3.4
