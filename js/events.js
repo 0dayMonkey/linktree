@@ -130,7 +130,6 @@ export function attachEventListeners() {
             return;
         }
 
-        // --- CORRECTION CLÉ : S'assurer que la sélection est bien dans un champ éditable ---
         const editable = selection.anchorNode.parentElement.closest('.editable-content');
         if (!editable) {
             formatToolbar.classList.remove('visible');
@@ -162,7 +161,6 @@ export function attachEventListeners() {
         logger.info(`Applying format: ${format}`);
         document.execCommand(format, false, null);
 
-        // Mettre à jour l'état après la commande exec, car le DOM a changé
         const selection = window.getSelection();
         if (selection && selection.anchorNode) {
             const editableDiv = selection.anchorNode.parentElement.closest('.editable-content');
@@ -186,7 +184,11 @@ export function attachEventListeners() {
     }, 400);
 
     editorContent.addEventListener('input', debouncedInputHandler);
+    
+    // --- CORRECTION CLÉ : Utiliser touchend pour les mobiles et selectionchange comme fallback ---
     document.addEventListener('selectionchange', showFormatToolbar);
+    editorContent.addEventListener('touchend', () => setTimeout(showFormatToolbar, 100));
+
 
     editorContent.addEventListener('change', e => {
         if (e.target.matches('.file-upload-input')) return handleFileUpload(e);
