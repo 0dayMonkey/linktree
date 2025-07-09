@@ -146,14 +146,53 @@ body {
 
 /* --- Formatted Input with Gear Icon --- */
 .formatted-input-wrapper { position: relative; }
-.formatted-input-wrapper .formatted-text-input { padding-right: 40px; }
-.format-c-btn { position: absolute; right: 1px; top: 1px; bottom: 1px; width: 38px; background: #F8F9FA; border: none; border-left: 1px solid #DEE2E6; color: #6C757D; cursor: pointer; border-top-right-radius: 6px; border-bottom-right-radius: 6px; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s, color 0.2s; }
+.formatted-input-wrapper .formatted-text-input { padding-right: 40px !important; }
+
+.format-c-btn {
+    position: absolute;
+    right: 1px;
+    top: 1px;
+    width: 38px;
+    height: calc(100% - 2px);
+    background: #F8F9FA;
+    border: none;
+    border-left: 1px solid #DEE2E6;
+    color: #6C757D;
+    cursor: pointer;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, color 0.2s;
+}
+.formatted-input-wrapper textarea + .format-c-btn {
+    height: 38px;
+    bottom: auto;
+}
 .format-c-btn:hover { background-color: #E9ECEF; color: var(--text-primary); }
 .format-c-btn.active { background-color: var(--primary-color); color: white; }
 
 /* --- Inline Format Toolbar --- */
-.inline-toolbar { position: absolute; z-index: 10001; background-color: #2c3e50; border-radius: 6px; padding: 4px; display: flex; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform-origin: bottom center; opacity: 0; visibility: hidden; transform: translateY(10px) scale(0.95); transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s; }
-.inline-toolbar.visible { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+.inline-toolbar {
+    position: absolute;
+    z-index: 10001;
+    background-color: #2c3e50;
+    border-radius: 6px;
+    padding: 4px;
+    display: flex;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform-origin: bottom center;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px) scale(0.95);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+.inline-toolbar.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
 .inline-toolbar button { background: transparent; border: none; color: white; cursor: pointer; padding: 6px 8px; border-radius: 4px; font-size: 14px; width: 32px; height: 32px; line-height: 1; }
 .inline-toolbar button:hover { background-color: #34495e; }
 .inline-toolbar button.active { background-color: #46627f; }

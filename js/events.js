@@ -1,5 +1,6 @@
 import { updateAndSave, getState, handleStateUpdate } from './state.js';
 import { showConfirmation, showContextMenu, hideContextMenu } from './ui.js';
+import logger from './logger.js';
 
 const readFileAsBase64 = (file) => new Promise((resolve, reject) => {
     if (!file) return resolve(null);
@@ -26,7 +27,7 @@ const handleFileUpload = async (e) => {
         const base64String = await readFileAsBase64(file);
         handleStateUpdate(key, base64String, id);
     } catch (error) {
-        console.error(error);
+        logger.error('File upload failed', error);
         showConfirmation('Erreur', 'Le fichier n\'a pas pu être lu.');
     }
 };
@@ -39,6 +40,7 @@ async function handleContextMenuAction(e) {
     
     const [type, idStr] = targetId.split('.');
     const id = parseInt(idStr, 10);
+    logger.info(`Context menu action: ${action} on ${targetId}`);
 
     if (action === 'edit') {
         const selector = id ? `[data-id="${id}"]` : `#card-${type.toLowerCase()}`;
@@ -52,15 +54,15 @@ async function handleContextMenuAction(e) {
         }
     } else if (action === 'delete-context') {
         const confirmed = await showConfirmation('Êtes-vous sûr(e) ?', 'Cette action est irréversible.');
-        if (!confirmed) return;
-        const currentState = JSON.parse(JSON.stringify(getState()));
+        if (!confirmed) return logger.info('Deletion cancelled by user.');
         
-        let listName = type;
-        if (listName.endsWith('s')) listName = listName.slice(0, -1) + 's'; 
+        const currentState = JSON.parse(JSON.stringify(getState()));
+        let listName = type.endsWith('s') ? type : `${type}s`;
 
         if (currentState[listName] && id) {
             currentState[listName] = currentState[listName].filter(item => item.id !== id);
             updateAndSave(currentState);
+            logger.info(`Item ${id} from ${listName} deleted.`);
         }
     }
 }
@@ -135,11 +137,18 @@ export function attachEventListeners() {
 
         if (!isVisible || (isVisible && button !== formatToolbar.currentButton)) {
             button.classList.add('active');
-            formatToolbar.style.top = `${button.offsetTop}px`;
-            formatToolbar.style.left = `${button.offsetLeft - formatToolbar.offsetWidth - 8}px`;
+            
+            const buttonRect = button.getBoundingClientRect();
+            const editorRect = editorContent.getBoundingClientRect();
+            
+            formatToolbar.style.top = `${buttonRect.top - editorRect.top + editorContent.scrollTop - formatToolbar.offsetHeight - 5}px`;
+            formatToolbar.style.left = `${buttonRect.left - editorRect.left + (buttonRect.width / 2) - (formatToolbar.offsetWidth / 2)}px`;
+
             formatToolbar.classList.add('visible');
             formatToolbar.currentButton = button;
+            logger.info('Formatting toolbar opened.');
         } else {
+            logger.info('Formatting toolbar closed.');
             formatToolbar.currentButton = null;
         }
     };
@@ -155,8 +164,12 @@ export function attachEventListeners() {
 
         const start = currentTargetInput.selectionStart;
         const end = currentTargetInput.selectionEnd;
-        if (start === end) return;
+        if (start === end) {
+            logger.warn('Formatting attempted with no text selected.');
+            return;
+        }
         
+        logger.info(`Applying format: ${format}`);
         const value = currentTargetInput.value;
         const selectedText = value.substring(start, end);
         const newText = `${value.substring(0, start)}<${tag}>${selectedText}</${tag}>${value.substring(end)}`;
@@ -164,7 +177,12 @@ export function attachEventListeners() {
         const key = currentTargetInput.dataset.key;
         const id = currentTargetInput.closest('[data-id]') ? parseInt(currentTargetInput.closest('[data-id]').dataset.id, 10) : null;
         
-        handleStateUpdate(key, newText, id);
+        currentTargetInput.value = newText;
+        const newSelectionEnd = start + `<${tag}>${selectedText}</${tag}>`.length;
+        currentTargetInput.setSelectionRange(newSelectionEnd, newSelectionEnd);
+        currentTargetInput.focus();
+
+        handleStateUpdate(key, newText, id, { skipRender: true });
     });
 
 
@@ -200,13 +218,14 @@ export function attachEventListeners() {
                 return;
             }
 
+            logger.info(`Button action: ${action}`);
             const currentState = JSON.parse(JSON.stringify(getState()));
             let stateChanged = true;
 
             if (action === 'delete') {
                 const itemEl = e.target.closest('[data-id]');
                 const confirmed = await showConfirmation('Êtes-vous sûr(e) ?', 'Cette action est irréversible.');
-                if (!itemEl || !confirmed) return;
+                if (!itemEl || !confirmed) return logger.info('Deletion cancelled by user.');
                 const id = parseInt(itemEl.dataset.id, 10);
                 currentState.links = (currentState.links || []).filter(item => item.id !== id);
                 currentState.socials = (currentState.socials || []).filter(item => item.id !== id);
@@ -235,6 +254,7 @@ export function attachEventListeners() {
             showContextMenu(e.data.payload);
         } else if (e.data.type === 'reorder') {
             const { draggedId, targetId } = e.data.payload;
+            logger.info('Reordering via preview frame', { draggedId, targetId });
             const [listName, dId] = draggedId.split('.');
             const tId = targetId ? targetId.split('.')[1] : null;
 
@@ -299,6 +319,7 @@ export function attachEventListeners() {
         const afterElement = getDragAfterElement(container.querySelector('.card-body'), e.clientY);
         const targetId = afterElement ? parseInt(afterElement.dataset.id, 10) : null;
         
+        logger.info(`Reordering in editor: item ${draggedId} moved before ${targetId} in ${listName}`);
         const currentState = JSON.parse(JSON.stringify(getState()));
         const list = currentState[listName];
         
