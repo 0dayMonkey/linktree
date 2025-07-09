@@ -134,7 +134,7 @@ body {
 .modal-text { font-size: 0.95rem; color: var(--text-secondary); margin: 0 0 24px 0; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
 
-/* --- NOUVEAU : Custom Select Dropdown --- */
+/* --- Custom Select Dropdown --- */
 .custom-select { position: relative; width: 100%; font-family: var(--font-family); }
 .select-selected { background-color: var(--pane-bg); padding: 10px 12px; border: 1px solid #CED4DA; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: border-color 0.2s, box-shadow 0.2s; user-select: none; }
 .select-selected.select-arrow-active { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(0, 93, 255, 0.15); }
@@ -145,4 +145,39 @@ body {
 .select-items div { color: var(--text-primary); padding: 10px 16px; cursor: pointer; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
 .select-items div:last-child { border-bottom: none; }
 .select-items div:hover, .same-as-selected { background-color: rgba(0, 93, 255, 0.08); }
-.select-items svg { width: 20px; height: 20px; fill: currentColor; flex-shrink: 0; }
+.select-items svg { width: 2px; height: 2px; fill: currentColor; flex-shrink: 0; }
+
+/* --- NOUVEAU : Responsive Design for Mobile --- */
+@media (max-width: 1024px) {
+    .admin-container {
+        flex-direction: column;
+        overflow-y: auto; /* Permet le défilement global sur mobile */
+    }
+
+    .editor-pane {
+        width: 100%;
+        max-width: none;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    #editor-content {
+        overflow-y: visible; /* Le défilement est géré par le conteneur principal */
+    }
+
+    .preview-pane {
+        width: 100%;
+        height: 80vh; /* Hauteur définie pour l'aperçu */
+        padding: 20px;
+    }
+
+    .editor-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .editor-header, #editor-content {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+}
