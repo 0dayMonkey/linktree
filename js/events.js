@@ -175,25 +175,27 @@ export function attachEventListeners() {
 
     const debouncedInputHandler = debounce(e => {
         const target = e.target;
-        if (!target.matches('.editable-content') && !target.dataset.key) return;
-
-        const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
-        const value = target.matches('.editable-content') ? target.innerHTML : target.value;
         
-        handleStateUpdate(target.dataset.key, value, id, { skipRender: true });
+        if (target.matches('.editable-content')) {
+            const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
+            handleStateUpdate(target.dataset.key, target.innerHTML, id, { skipRender: true });
+        } else if (target.dataset.key) {
+             const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
+             handleStateUpdate(target.dataset.key, target.value, id);
+        }
     }, 400);
 
     editorContent.addEventListener('input', debouncedInputHandler);
     document.addEventListener('selectionchange', showFormatToolbar);
     editorContent.addEventListener('touchend', () => setTimeout(showFormatToolbar, 100));
 
-    // --- CORRECTION CLÉ : Utiliser if/else if pour séparer la logique de l'upload ---
+    // --- CORRECTION CLÉ : Le 'change' ne s'occupe que du file-upload, le reste est géré par 'input' ---
     editorContent.addEventListener('change', e => {
         if (e.target.matches('.file-upload-input')) {
             handleFileUpload(e);
-        } else if (e.target.dataset.key) {
-            const id = e.target.closest('[data-id]') ? parseInt(e.target.closest('[data-id]').dataset.id, 10) : null;
-            handleStateUpdate(e.target.dataset.key, e.target.value, id);
+        } else if (e.target.matches('input[type=color]')) {
+             const id = e.target.closest('[data-id]') ? parseInt(e.target.closest('[data-id]').dataset.id, 10) : null;
+             handleStateUpdate(e.target.dataset.key, e.target.value, id);
         }
     });
 
