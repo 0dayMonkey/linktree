@@ -54,7 +54,10 @@ async function handleContextMenuAction(e) {
         const confirmed = await showConfirmation('Êtes-vous sûr(e) ?', 'Cette action est irréversible.');
         if (!confirmed) return;
         const currentState = JSON.parse(JSON.stringify(getState()));
-        const listName = type;
+        
+        let listName = type;
+        if (listName.endsWith('s')) listName = listName.slice(0, -1) + 's'; 
+
         if (currentState[listName] && id) {
             currentState[listName] = currentState[listName].filter(item => item.id !== id);
             updateAndSave(currentState);
@@ -62,12 +65,63 @@ async function handleContextMenuAction(e) {
     }
 }
 
+function handleCustomSelect(e) {
+    e.stopPropagation();
+    const select = e.target.closest('.custom-select');
+    if (!select) return;
+
+    const selected = select.querySelector('.select-selected');
+    const items = select.querySelector('.select-items');
+    
+    // Close other selects
+    document.querySelectorAll('.custom-select .select-items').forEach(otherItems => {
+        if (otherItems !== items) {
+            otherItems.classList.add('select-hide');
+            otherItems.previousElementSibling.classList.remove('select-arrow-active');
+        }
+    });
+
+    items.classList.toggle('select-hide');
+    selected.classList.toggle('select-arrow-active');
+}
+
+function handleSelectOption(e) {
+    const option = e.target.closest('[data-value]');
+    if (!option) return;
+
+    const select = option.closest('.custom-select');
+    const key = select.dataset.key;
+    const id = select.closest('[data-id]') ? parseInt(select.closest('[data-id]').dataset.id, 10) : null;
+    const value = option.dataset.value;
+    
+    handleStateUpdate(key, value, id);
+}
+
+function reorderList(list, draggedId, targetId) {
+    const draggedIndex = list.findIndex(item => item.id === draggedId);
+    if (draggedIndex === -1) return list;
+
+    const [draggedItem] = list.splice(draggedIndex, 1);
+
+    if (targetId === null) {
+        list.push(draggedItem);
+    } else {
+        const targetIndex = list.findIndex(item => item.id === targetId);
+        if (targetIndex !== -1) {
+            list.splice(targetIndex, 0, draggedItem);
+        } else {
+             list.push(draggedItem); // Fallback if target not found
+        }
+    }
+    return list;
+}
+
+
 export function attachEventListeners() {
     const editorContent = document.getElementById('editor-content');
     const contextMenu = document.getElementById('custom-context-menu');
     if (!editorContent) return;
     
-    // --- Événements classiques ---
     editorContent.addEventListener('change', e => {
         if (e.target.matches('.file-upload-input')) return handleFileUpload(e);
         if (e.target.dataset.key) {
@@ -84,6 +138,16 @@ export function attachEventListeners() {
     }, 300));
 
     editorContent.addEventListener('click', async (e) => {
+        // --- Custom Select Logic ---
+        if (e.target.closest('.custom-select')) {
+             if (e.target.closest('[data-value]')) {
+                handleSelectOption(e);
+            } else {
+                handleCustomSelect(e);
+            }
+        }
+
+        // --- Action Buttons Logic ---
         const actionTarget = e.target.closest('[data-action]');
         if (!actionTarget) return;
         const action = actionTarget.dataset.action;
@@ -100,11 +164,11 @@ export function attachEventListeners() {
             currentState.links = (currentState.links || []).filter(item => item.id !== id);
             currentState.socials = (currentState.socials || []).filter(item => item.id !== id);
         } else if (action === 'add-link') {
-            currentState.links.push({ type: 'link', id: Date.now(), title: 'Nouveau Lien', url: 'https://' });
+            currentState.links.push({ type: 'link', id: Date.now(), title: 'Nouveau Lien', url: 'https://', order: currentState.links.length });
         } else if (action === 'add-header') {
-            currentState.links.push({ type: 'header', id: Date.now(), title: 'Nouvel En-tête' });
+            currentState.links.push({ type: 'header', id: Date.now(), title: 'Nouvel En-tête', order: currentState.links.length });
         } else if (action === 'add-social') {
-            currentState.socials.push({ id: Date.now(), url: 'https://', network: 'website' });
+            currentState.socials.push({ id: Date.now(), url: 'https://', network: 'website', order: currentState.socials.length });
         } else {
             stateChanged = false;
         }
@@ -113,13 +177,33 @@ export function attachEventListeners() {
     });
     
     window.addEventListener('message', e => {
-        if (e.data.type === 'showContextMenu') showContextMenu(e.data.payload);
+        if (e.data.type === 'showContextMenu') {
+            showContextMenu(e.data.payload);
+        } else if (e.data.type === 'reorder') {
+            const { draggedId, targetId } = e.data.payload;
+            const [listName, dId] = draggedId.split('.');
+            const tId = targetId ? targetId.split('.')[1] : null;
+
+            const currentState = JSON.parse(JSON.stringify(getState()));
+            const list = currentState[listName];
+
+            if(list) {
+                const reorderedList = reorderList(list, parseInt(dId), tId ? parseInt(tId) : null);
+                currentState[listName] = reorderedList;
+                updateAndSave(currentState);
+            }
+        }
     });
 
-    document.addEventListener('click', () => hideContextMenu());
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.custom-select')) {
+            document.querySelectorAll('.custom-select .select-items').forEach(item => item.classList.add('select-hide'));
+            document.querySelectorAll('.select-selected').forEach(item => item.classList.remove('select-arrow-active'));
+        }
+        hideContextMenu();
+    });
     contextMenu.addEventListener('click', e => handleContextMenuAction(e));
 
-    // --- NOUVEAU : Logique du Drag & Drop ---
     let draggedItem = null;
 
     editorContent.addEventListener('dragstart', e => {
@@ -144,19 +228,11 @@ export function attachEventListeners() {
         if (!container || !draggedItem) return;
 
         const afterElement = getDragAfterElement(container, e.clientY);
-        const currentDraggable = document.querySelector('.dragging');
-
-        // Nettoyer les indicateurs précédents
+        
         container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
         
-        if (afterElement == null) {
-            if(container.lastElementChild !== currentDraggable) {
-                 container.lastElementChild.classList.add('drag-over-bottom'); // Ou une autre classe pour la fin
-            }
-        } else {
-            if(afterElement !== currentDraggable) {
-                afterElement.classList.add('drag-over');
-            }
+        if (afterElement) {
+             afterElement.classList.add('drag-over');
         }
     });
     
@@ -164,25 +240,22 @@ export function attachEventListeners() {
         e.preventDefault();
         const container = e.target.closest('[data-list-name]');
         if (!container || !draggedItem) return;
-
-        const afterElement = getDragAfterElement(container.querySelector('.card-body'), e.clientY);
         
-        const listName = container.dataset.listName === "liens-&-en-têtes" ? 'links' : 'socials';
-        const id = parseInt(draggedItem.dataset.id, 10);
+        container.querySelector('.card-body').querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        
+        const listNameAttr = container.dataset.listName;
+        const listName = listNameAttr === 'liens-&-en-têtes' ? 'links' : 'socials';
+        
+        const draggedId = parseInt(draggedItem.dataset.id, 10);
+        
+        const afterElement = getDragAfterElement(container.querySelector('.card-body'), e.clientY);
+        const targetId = afterElement ? parseInt(afterElement.dataset.id, 10) : null;
         
         const currentState = JSON.parse(JSON.stringify(getState()));
         const list = currentState[listName];
-
-        const draggedIndex = list.findIndex(item => item.id === id);
-        const [removed] = list.splice(draggedIndex, 1);
         
-        if (afterElement == null) {
-            list.push(removed);
-        } else {
-            const dropId = parseInt(afterElement.dataset.id, 10);
-            const dropIndex = list.findIndex(item => item.id === dropId);
-            list.splice(dropIndex, 0, removed);
-        }
+        const reorderedList = reorderList(list, draggedId, targetId);
+        currentState[listName] = reorderedList;
 
         updateAndSave(currentState);
     });

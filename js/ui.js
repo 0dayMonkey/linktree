@@ -1,5 +1,5 @@
-// js/ui.js
 import { FONT_OPTIONS, SOCIAL_OPTIONS, GRADIENT_OPTIONS } from './config.js';
+import { ICONS } from './icons.js';
 
 const editorContent = document.getElementById('editor-content');
 const contextMenu = document.getElementById('custom-context-menu');
@@ -19,7 +19,7 @@ export function render(state) {
         ${createProfileCard(state.profile)}
         ${createAppearanceCard(state.appearance)}
         ${createItemsCard('Icônes Sociales', state.socials || [], createSocialItemHTML, 'add-social', 'Ajouter une icône')}
-        ${createItemsCard('Liens & En-têtes', state.links || [], createLinkItemHTML, 'add-link', 'Ajouter un lien')}
+        ${createItemsCard('Liens & En-têtes', state.links || [], createLinkItemHTML, 'add-link', 'Ajouter un lien', 'add-header', 'Ajouter un en-tête')}
         ${createSettingsCard(state.seo)}
     `;
     
@@ -100,6 +100,37 @@ function createColorInputHTML(key, value, label) {
         </div>`;
 }
 
+function createCustomSelectHTML(key, options, selectedValue, { id = null, type = 'default' } = {}) {
+    let selectedDisplay = 'Sélectionner...';
+    
+    const optionsHTML = Object.entries(options).map(([val, display]) => {
+        let finalDisplay;
+        let style = '';
+        if (type === 'font') {
+            finalDisplay = display.name;
+            style = `font-family: ${display.value};`;
+            if (selectedValue === display.value) selectedDisplay = `<span style="${style}">${finalDisplay}</span>`;
+        } else if (type === 'social') {
+            finalDisplay = `<span>${display.name}</span>`;
+            if (ICONS[val]) finalDisplay = `${ICONS[val]}${finalDisplay}`;
+            if (selectedValue === val) selectedDisplay = finalDisplay;
+        } else { // gradient, bg_type
+             finalDisplay = display.name || display;
+             if(selectedValue === val) selectedDisplay = finalDisplay;
+        }
+        return `<div data-value="${val}" style="${style}" class="${selectedValue === val ? 'same-as-selected' : ''}">${finalDisplay}</div>`;
+    }).join('');
+
+    const dataIdAttr = id ? `data-id="${id}"` : '';
+
+    return `
+        <div class="custom-select" data-key="${key}" ${dataIdAttr}>
+            <div class="select-selected">${selectedDisplay}</div>
+            <div class="select-items select-hide">${optionsHTML}</div>
+        </div>
+    `;
+}
+
 function createProfileCard(profile) {
     return `<div class="card" id="card-profile">
         <div class="card-header"><h2>Profil</h2></div>
@@ -114,13 +145,14 @@ function createProfileCard(profile) {
 }
 
 function createAppearanceCard(appearance) {
-    const fontOpts = Object.entries(FONT_OPTIONS).map(([n, v]) => `<option value="${v}" style="font-family: ${v};" ${appearance.fontFamily === v ? 'selected' : ''}>${n}</option>`).join('');
     const bg = appearance.background || {};
-    const gradientOpts = Object.entries(GRADIENT_OPTIONS).map(([key, { name }]) => `<option value="${key}" ${bg.value === key ? 'selected' : ''}>${name}</option>`).join('');
+    const fontOptions = Object.entries(FONT_OPTIONS).reduce((acc, [name, value]) => ({ ...acc, [value]: { name, value } }), {});
+    const bgTypeOptions = { solid: "Couleur unie", gradient: "Dégradé", image: "Image" };
+
     const bgControls = () => {
         switch(bg.type) {
             case 'solid': return createColorInputHTML('appearance.background.value', bg.value, 'Couleur de fond');
-            case 'gradient': return `<div class="form-group"><label for="gradient-select">Choisir un dégradé</label><select id="gradient-select" data-key="appearance.background.value">${gradientOpts}</select></div>`;
+            case 'gradient': return `<div class="form-group"><label>Choisir un dégradé</label>${createCustomSelectHTML('appearance.background.value', GRADIENT_OPTIONS, bg.value, { type: 'gradient' })}</div>`;
             case 'image': return createFileUploadHTML('appearance.background.value', bg.value, 'Image de fond');
             default: return '';
         }
@@ -128,9 +160,9 @@ function createAppearanceCard(appearance) {
     return `<div class="card" id="card-appearance">
         <div class="card-header"><h2>Apparence</h2></div>
         <div class="card-body">
-            <div class="form-group"><label for="font-select">Police</label><select id="font-select" data-key="appearance.fontFamily">${fontOpts}</select></div>
+            <div class="form-group"><label>Police</label>${createCustomSelectHTML('appearance.fontFamily', fontOptions, appearance.fontFamily, { type: 'font' })}</div>
             ${createColorInputHTML('appearance.textColor', appearance.textColor, 'Couleur du texte')}
-            <div class="form-group"><label for="bg-type-select">Type de fond</label><select id="bg-type-select" data-key="appearance.background.type"><option value="solid" ${bg.type === 'solid' ? 'selected' : ''}>Couleur unie</option><option value="gradient" ${bg.type === 'gradient' ? 'selected' : ''}>Dégradé</option><option value="image" ${bg.type === 'image' ? 'selected' : ''}>Image</option></select></div>
+            <div class="form-group"><label>Type de fond</label>${createCustomSelectHTML('appearance.background.type', bgTypeOptions, bg.type, { type: 'bg_type'})}</div>
             <div id="background-controls">${bgControls()}</div>
             <hr style="border:none; border-top:1px solid var(--border-color); margin: 24px 0;">
             <div class="form-grid">
@@ -141,26 +173,28 @@ function createAppearanceCard(appearance) {
     </div>`;
 }
 
-function createItemsCard(title, items, itemRenderer, addAction, addLabel) {
+function createItemsCard(title, items, itemRenderer, addAction1, addLabel1, addAction2, addLabel2) {
     const itemsHTML = (items || []).map(item => itemRenderer(item)).join('');
+    const buttons = `
+        <button data-action="${addAction1}" class="btn btn-secondary">${addLabel1}</button>
+        ${addAction2 ? `<button data-action="${addAction2}" class="btn btn-secondary">${addLabel2}</button>` : ''}
+    `;
     return `<div class="card" data-list-name="${title.toLowerCase().replace(/ /g, '-')}">
-        <div class="card-header"><h2>${title}</h2><button data-action="${addAction}" class="btn btn-secondary">${addLabel}</button></div>
+        <div class="card-header"><h2>${title}</h2><div style="display:flex; gap: 8px;">${buttons}</div></div>
         <div class="card-body">${itemsHTML.length > 0 ? itemsHTML : '<p class="empty-state">Aucun élément.</p>'}</div>
     </div>`;
 }
 
 function createSocialItemHTML(item) {
-    const socialOpts = Object.entries(SOCIAL_OPTIONS).map(([key, name]) => `<option value="${key}" ${item.network === key ? 'selected' : ''}>${name}</option>`).join('');
-    // MISE À JOUR : Ajout de draggable="true"
+    const socialOptions = Object.entries(SOCIAL_OPTIONS).reduce((acc, [key, name]) => ({ ...acc, [key]: { name } }), {});
     return `<div class="item-container" data-id="${item.id}" draggable="true">
-        <div class="item-header"><span>Icône : ${SOCIAL_OPTIONS[item.network] || item.network}</span><button data-action="delete" class="btn btn-danger">✖</button></div>
-        <div class="form-group"><label for="social-network-${item.id}">Réseau</label><select id="social-network-${item.id}" data-key="network">${socialOpts}</select></div>
+        <div class="item-header"><span>Icône</span><button data-action="delete" class="btn btn-danger">✖</button></div>
+        <div class="form-group"><label>Réseau</label>${createCustomSelectHTML('network', socialOptions, item.network, { id: item.id, type: 'social' })}</div>
         <div class="form-group"><label for="social-url-${item.id}">URL ou Pseudo</label><input type="text" id="social-url-${item.id}" data-key="url" value="${item.url || ''}"></div>
     </div>`;
 }
 
 function createLinkItemHTML(item) {
-    // MISE À JOUR : Ajout de draggable="true"
     if (item.type === 'header') {
         return `<div class="item-container" data-id="${item.id}" draggable="true">
             <div class="item-header"><span>En-tête</span><button data-action="delete" class="btn btn-danger">✖</button></div>
@@ -168,7 +202,7 @@ function createLinkItemHTML(item) {
         </div>`;
     }
     return `<div class="item-container" data-id="${item.id}" draggable="true">
-        <div class="item-header"><span>Lien : ${item.title}</span><button data-action="delete" class="btn btn-danger">✖</button></div>
+        <div class="item-header"><span>Lien</span><button data-action="delete" class="btn btn-danger">✖</button></div>
         <div class="form-group"><label for="link-title-${item.id}">Titre</label><input type="text" id="link-title-${item.id}" data-key="title" value="${item.title || ''}"></div>
         <div class="form-group"><label for="link-url-${item.id}">URL</label><input type="text" id="link-url-${item.id}" data-key="url" value="${item.url || ''}"></div>
         ${createFileUploadHTML('thumbnailUrl', item.thumbnailUrl, 'Miniature', item.id)}

@@ -114,6 +114,7 @@
                 a.title = social.network;
                 a.innerHTML = ICONS[social.network];
                 a.dataset.editableId = `socials.${social.id}`;
+                a.draggable = true;
                 socialContainer.appendChild(a);
             });
 
@@ -121,10 +122,12 @@
             linksList.innerHTML = '';
             (links || []).forEach(item => {
                 const li = document.createElement('li');
+                li.dataset.editableId = `links.${item.id}`;
+                li.draggable = true;
+
                 if (item.type === 'header') {
                     li.classList.add('list-header');
                     li.textContent = item.title;
-                    li.dataset.editableId = `links.${item.id}`;
                 } else {
                     const a = document.createElement('a');
                     let url = item.url;
@@ -134,8 +137,7 @@
                     a.href = url;
                     a.target = "_blank";
                     a.rel = "noopener noreferrer";
-                    a.dataset.linkId = item.id;
-                    a.dataset.editableId = `links.${item.id}`;
+                    
                     if (item.thumbnailUrl) {
                         a.classList.add('has-thumbnail');
                         a.innerHTML = `<img src="${item.thumbnailUrl}" alt="" class="link-thumbnail"><span>${item.title}</span>`;
@@ -146,25 +148,86 @@
             });
         }
 
-        function attachContextMenuListeners() {
+        function postMessageToParent(type, payload) {
+            window.parent.postMessage({ type, payload }, '*');
+        }
+
+        function attachAllListeners() {
+            // --- CONTEXT MENU ---
             document.body.addEventListener('contextmenu', e => {
                 const target = e.target.closest('[data-editable-id]');
                 if (!target) return;
                 e.preventDefault();
-                const id = target.dataset.editableId;
-                window.parent.postMessage({
-                    type: 'showContextMenu',
-                    payload: { id, x: e.clientX, y: e.clientY }
-                }, '*');
+                postMessageToParent('showContextMenu', { 
+                    id: target.dataset.editableId, 
+                    x: e.clientX, 
+                    y: e.clientY 
+                });
+            });
+
+            // --- DRAG & DROP ---
+            let draggedItem = null;
+            
+            function getDragAfterElement(container, y) {
+                const draggableElements = [...container.querySelectorAll('[draggable="true"]:not(.dragging)')];
+                return draggableElements.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2;
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset, element: child };
+                    }
+                    return closest;
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
+            }
+
+            document.body.addEventListener('dragstart', e => {
+                const target = e.target.closest('[data-editable-id]');
+                if (!target) return e.preventDefault();
+                draggedItem = target;
+                setTimeout(() => target.style.opacity = '0.5', 0);
+            });
+
+            document.body.addEventListener('dragend', e => {
+                if (draggedItem) {
+                    draggedItem.style.opacity = '1';
+                    draggedItem = null;
+                }
+            });
+
+            document.body.addEventListener('dragover', e => {
+                e.preventDefault();
+            });
+
+            document.body.addEventListener('drop', e => {
+                e.preventDefault();
+                if (!draggedItem) return;
+                
+                const targetContainer = e.target.closest('.links-list, .social-icons');
+                const draggedContainer = draggedItem.closest('.links-list, .social-icons');
+                
+                // Prevent dropping across different containers
+                if (!targetContainer || targetContainer !== draggedContainer) {
+                    draggedItem.style.opacity = '1';
+                    draggedItem = null;
+                    return;
+                }
+
+                const afterElement = getDragAfterElement(targetContainer, e.clientY);
+                const draggedId = draggedItem.dataset.editableId;
+                const targetId = afterElement ? afterElement.dataset.editableId : null;
+                
+                postMessageToParent('reorder', { draggedId, targetId });
             });
         }
 
         const isIframe = window.self !== window.top;
         if (isIframe) {
             window.addEventListener('message', event => {
-                if (event.data.type === 'update') renderPage(event.data.payload);
+                if (event.data.type === 'update') {
+                    renderPage(event.data.payload);
+                }
             });
-            attachContextMenuListeners();
+            attachAllListeners();
         } else {
             document.addEventListener('DOMContentLoaded', () => {
                  fetch('https://reliable-hamster-b1e205.netlify.app/.netlify/functions/get-data')
