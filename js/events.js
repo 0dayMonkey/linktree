@@ -1,4 +1,3 @@
-// js/events.js
 import { updateAndSave, getState, handleStateUpdate } from './state.js';
 import { showConfirmation, showContextMenu, hideContextMenu } from './ui.js';
 
@@ -166,10 +165,8 @@ export function attachEventListeners() {
         const container = e.target.closest('[data-list-name]');
         if (!container || !draggedItem) return;
 
-        // Récupérer la nouvelle position
         const afterElement = getDragAfterElement(container.querySelector('.card-body'), e.clientY);
         
-        // Mettre à jour l'état
         const listName = container.dataset.listName === "liens-&-en-têtes" ? 'links' : 'socials';
         const id = parseInt(draggedItem.dataset.id, 10);
         
