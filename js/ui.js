@@ -4,6 +4,7 @@ import { FONT_OPTIONS, SOCIAL_OPTIONS, GRADIENT_OPTIONS } from './config.js';
 const editorContent = document.getElementById('editor-content');
 const contextMenu = document.getElementById('custom-context-menu');
 const modalContainer = document.getElementById('modal-container');
+const previewFrame = document.getElementById('preview-frame');
 
 export function render(state) {
     if (!editorContent || !state.profile) return;
@@ -59,8 +60,15 @@ export function showConfirmation(title, text) {
 }
 
 export function showContextMenu({ id, x, y }) {
-    contextMenu.style.top = `${y}px`;
-    contextMenu.style.left = `${x}px`;
+    if (!contextMenu || !previewFrame) return;
+
+    // --- CORRECTION CLÉ : Calcul du positionnement ---
+    const iframeRect = previewFrame.getBoundingClientRect();
+    const finalX = iframeRect.left + x;
+    const finalY = iframeRect.top + y;
+
+    contextMenu.style.top = `${finalY}px`;
+    contextMenu.style.left = `${finalX}px`;
     contextMenu.style.display = 'block';
     contextMenu.innerHTML = `<div class="context-menu-item" data-action="edit" data-target-id="${id}">✏️ Aller à l'élément</div><div class="context-menu-item delete" data-action="delete-context" data-target-id="${id}">🗑️ Supprimer</div>`;
 }
