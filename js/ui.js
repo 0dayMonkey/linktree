@@ -9,9 +9,7 @@ const previewFrame = document.getElementById('preview-frame');
 export function render(state) {
     if (!editorContent || !state.profile) return;
     
-    const focusedElement = document.activeElement;
-    const focusedElementId = focusedElement ? focusedElement.id : null;
-    
+    const focusedElementId = document.activeElement.id;
     const scrollPosition = editorContent.scrollTop;
 
     editorContent.innerHTML = `
@@ -143,15 +141,6 @@ function createCustomSelectHTML(key, options, selectedValue, { id = null, type =
     `;
 }
 
-function createFormattedInputHTML(id, key, value, placeholder) {
-    const gearIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 15.5C14.2091 15.5 16 13.7091 16 11.5C16 9.29086 14.2091 7.5 12 7.5C9.79086 7.5 8 9.29086 8 11.5C8 13.7091 9.79086 15.5 12 15.5Z" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.4 15L21.5 16.4C21.8 16.6 22 17.1 22 17.5V19.9C22 20.3 21.8 20.8 21.5 21L19.4 22.4C19 22.6 18.5 22.7 18.1 22.7L15.3 22.2C14.9 22.2 14.4 22 14.2 21.6L12.5 19.3C12.2 18.9 11.8 18.9 11.5 19.3L9.8 21.6C9.6 22 9.1 22.2 8.7 22.2L5.9 22.7C5.5 22.7 5 22.6 4.6 22.4L2.5 21C2.2 20.8 2 20.3 2 19.9V17.5C2 17.1 2.2 16.6 2.5 16.4L4.6 15C5 14.8 5.5 14.7 5.9 14.7L8.7 15.2C9.1 15.2 9.6 15.4 9.8 15.8L11.5 18.1C11.8 18.5 12.2 18.5 12.5 18.1L14.2 15.8C14.4 15.4 14.9 15.2 15.3 15.2L18.1 14.7C18.5 14.7 19 14.8 19.4 15Z" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-
-    return `<div class="formatted-input-wrapper">
-        <div id="${id}" data-key="${key}" class="editable-content" contenteditable="true" data-placeholder="${placeholder}">${value || ''}</div>
-        <button class="format-c-btn" data-action="toggle-format-toolbar" aria-label="Outils de formatage">${gearIcon}</button>
-    </div>`;
-}
-
 function createProfileCard(profile) {
     return `<div class="card" id="card-profile">
         <div class="card-header"><h2>Profil</h2></div>
@@ -159,11 +148,11 @@ function createProfileCard(profile) {
             ${createFileUploadHTML('profile.pictureUrl', profile.pictureUrl, 'Photo de profil')}
             <div class="form-group">
                 <label for="profile-title">Titre du profil</label>
-                ${createFormattedInputHTML('profile-title', 'profile.title', profile.title, '@VotreNom')}
+                <div id="profile-title" data-key="profile.title" class="editable-content" contenteditable="true" data-placeholder="@VotreNom">${profile.title || ''}</div>
             </div>
             <div class="form-group">
                 <label for="profile-description">Description</label>
-                ${createFormattedInputHTML('profile-description', 'profile.description', profile.description, 'Votre bio...')}
+                <div id="profile-description" data-key="profile.description" class="editable-content" contenteditable="true" data-placeholder="Votre bio...">${profile.description || ''}</div>
             </div>
         </div>
     </div>`;
@@ -223,12 +212,16 @@ function createLinkItemHTML(item) {
     if (item.type === 'header') {
         return `<div class="item-container" ${dataIdAttr} draggable="true">
             <div class="item-header"><span>En-tête</span><button data-action="delete" class="btn btn-danger">✖</button></div>
-            <div class="form-group"><label for="header-title-${item.id}">Texte</label>${createFormattedInputHTML(`header-title-${item.id}`, 'title', item.title, 'Nouvel en-tête')}</div>
+            <div class="form-group"><label for="header-title-${item.id}">Texte</label>
+                <div id="header-title-${item.id}" data-key="title" class="editable-content" contenteditable="true" data-placeholder="Nouvel en-tête">${item.title || ''}</div>
+            </div>
         </div>`;
     }
     return `<div class="item-container" ${dataIdAttr} draggable="true">
         <div class="item-header"><span>Lien</span><button data-action="delete" class="btn btn-danger">✖</button></div>
-        <div class="form-group"><label for="link-title-${item.id}">Titre</label>${createFormattedInputHTML(`link-title-${item.id}`, 'title', item.title, 'Nouveau lien')}</div>
+        <div class="form-group"><label for="link-title-${item.id}">Titre</label>
+            <div id="link-title-${item.id}" data-key="title" class="editable-content" contenteditable="true" data-placeholder="Titre du lien">${item.title || ''}</div>
+        </div>
         <div class="form-group"><label for="link-url-${item.id}">URL</label><input type="text" id="link-url-${item.id}" data-key="url" data-id="${item.id}" value="${item.url || ''}"></div>
         ${createFileUploadHTML('thumbnailUrl', item.thumbnailUrl, 'Miniature', item.id)}
     </div>`;

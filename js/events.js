@@ -120,59 +120,40 @@ export function attachEventListeners() {
     const editorContent = document.getElementById('editor-content');
     const contextMenu = document.getElementById('custom-context-menu');
     const formatToolbar = document.getElementById('inline-format-toolbar');
-    let currentEditableDiv = null;
 
     if (!editorContent) return;
 
-    const toggleFormatToolbar = (button) => {
-        const wrapper = button.closest('.formatted-input-wrapper');
-        if (!wrapper) return;
-        
-        currentEditableDiv = wrapper.querySelector('.editable-content');
-        const isVisible = formatToolbar.classList.contains('visible');
-        
-        document.querySelectorAll('.format-c-btn.active').forEach(b => b.classList.remove('active'));
-        formatToolbar.classList.remove('visible');
-
-        if (!isVisible || (isVisible && button !== formatToolbar.currentButton)) {
-            button.classList.add('active');
-            
-            const buttonRect = button.getBoundingClientRect();
-            const editorPaneRect = editorContent.getBoundingClientRect();
-            
-            const top = buttonRect.top - editorPaneRect.top + editorContent.scrollTop;
-            const left = buttonRect.left - editorPaneRect.left - formatToolbar.offsetWidth - 8;
-
-            formatToolbar.style.top = `${top}px`;
-            formatToolbar.style.left = `${left}px`;
-
-            formatToolbar.classList.add('visible');
-            formatToolbar.currentButton = button;
-            logger.info('Formatting toolbar opened for', currentEditableDiv.id);
-        } else {
-            logger.info('Formatting toolbar closed.');
-            formatToolbar.currentButton = null;
+    const showFormatToolbar = () => {
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+            formatToolbar.classList.remove('visible');
+            return;
         }
+
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        const editorRect = editorContent.getBoundingClientRect();
+
+        let top = rect.top - editorRect.top + editorContent.scrollTop - formatToolbar.offsetHeight - 8;
+        if (top < editorContent.scrollTop) { // If toolbar is off-screen at the top, show it below
+            top = rect.bottom - editorRect.top + editorContent.scrollTop + 8;
+        }
+        const left = rect.left - editorRect.left + (rect.width / 2) - (formatToolbar.offsetWidth / 2);
+
+        formatToolbar.style.top = `${top}px`;
+        formatToolbar.style.left = `${Math.max(0, left)}px`; // Ensure it doesn't go off-screen left
+        formatToolbar.classList.add('visible');
+        logger.info('Formatting toolbar shown for selection.');
     };
     
     formatToolbar.addEventListener('mousedown', (e) => {
         e.preventDefault();
-        if (!currentEditableDiv) return;
-
         const button = e.target.closest('button');
         if (!button) return;
-
+        
         const format = button.dataset.format;
         logger.info(`Applying format: ${format}`);
-        
         document.execCommand(format, false, null);
-        
-        const key = currentEditableDiv.dataset.key;
-        const id = currentEditableDiv.closest('[data-id]') ? parseInt(currentEditableDiv.closest('[data-id]').dataset.id, 10) : null;
-        const newHtml = currentEditableDiv.innerHTML;
-
-        handleStateUpdate(key, newHtml, id, { skipRender: true });
-        currentEditableDiv.focus();
     });
 
     const debouncedInputHandler = debounce(e => {
@@ -182,10 +163,13 @@ export function attachEventListeners() {
         const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
         const value = target.matches('.editable-content') ? target.innerHTML : target.value;
         
-        handleStateUpdate(target.dataset.key, value, id);
+        handleStateUpdate(target.dataset.key, value, id, { skipRender: true });
     }, 400);
 
     editorContent.addEventListener('input', debouncedInputHandler);
+    editorContent.addEventListener('mouseup', () => setTimeout(showFormatToolbar, 1));
+    editorContent.addEventListener('keyup', () => setTimeout(showFormatToolbar, 1));
+
 
     editorContent.addEventListener('change', e => {
         if (e.target.matches('.file-upload-input')) return handleFileUpload(e);
@@ -201,12 +185,7 @@ export function attachEventListeners() {
         if (actionTarget) {
             e.preventDefault();
             const action = actionTarget.dataset.action;
-
-            if (action === 'toggle-format-toolbar') {
-                toggleFormatToolbar(actionTarget);
-                return;
-            }
-
+            
             logger.info(`Button action: ${action}`);
             const currentState = JSON.parse(JSON.stringify(getState()));
             let stateChanged = true;
@@ -263,10 +242,8 @@ export function attachEventListeners() {
             document.querySelectorAll('.select-items').forEach(item => item.classList.add('select-hide'));
             document.querySelectorAll('.select-selected').forEach(item => item.classList.remove('select-arrow-active'));
         }
-        if (!e.target.closest('.formatted-input-wrapper') && !e.target.closest('#inline-format-toolbar')) {
+        if (!e.target.closest('.editable-content') && !e.target.closest('#inline-format-toolbar')) {
             formatToolbar.classList.remove('visible');
-            document.querySelectorAll('.format-c-btn.active').forEach(b => b.classList.remove('active'));
-            formatToolbar.currentButton = null;
         }
         hideContextMenu();
     });
