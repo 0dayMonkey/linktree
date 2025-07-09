@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,7 +11,7 @@
 
     <div class="container">
         <header>
-            <img id="profile-picture" src="" alt="Profile Picture" class="profile-picture">
+            <img id="profile-picture" src="" alt="Photo de profil" class="profile-picture">
             <h1 id="profile-title"></h1>
             <div id="social-icons" class="social-icons"></div>
         </header>
@@ -35,11 +35,20 @@
             website: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm0 22c-5.514 0-10-4.486-10-10s4.486-10 10-10 10 4.486 10 10-4.486 10-10 10zm-1-12h-3v2h3v3h2v-3h3v-2h-3v-3h-2v3z"/></svg>`,
         };
 
+        function setFavicon(url) {
+            let link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+            link.type = url.includes('svg') ? 'image/svg+xml' : 'image/x-icon';
+            link.rel = 'shortcut icon';
+            link.href = url;
+            document.getElementsByTagName('head')[0].appendChild(link);
+        }
+
         function renderPage(data) {
             const { seo, appearance, profile, socials, links } = data || {};
             if (!profile) return;
 
             document.title = seo?.title || profile?.title || 'Links';
+            if(seo?.faviconUrl) setFavicon(seo.faviconUrl);
 
             if (appearance) {
                 let fontLink = document.getElementById('dynamic-font-link');
@@ -56,7 +65,7 @@
                 let backgroundValue;
                 const bg = appearance.background;
                 if (bg.type === 'image') {
-                    backgroundValue = `url(${CSS.escape(bg.value)})`;
+                    backgroundValue = `url(${bg.value})`;
                 } else if (bg.type === 'gradient') {
                     const colors = Array.isArray(bg.value) ? bg.value : bg.value.split(',');
                     backgroundValue = `linear-gradient(135deg, ${colors[0]}, ${colors[1]})`;
@@ -78,15 +87,12 @@
 
             document.getElementById('profile-picture').src = profile?.pictureUrl || '';
             document.getElementById('profile-title').textContent = profile?.title || '';
+            
             const socialContainer = document.getElementById('social-icons');
             socialContainer.innerHTML = '';
             socials?.forEach(social => {
                 if (!social.url || !ICONS[social.network]) return;
-                const a = document.createElement('a');
-                a.href = social.url;
-                a.target = '_blank';
-                a.title = social.network;
-                a.innerHTML = ICONS[social.network];
+                const a = document.createElement('a'); a.href = social.url; a.target = '_blank'; a.rel="noopener noreferrer"; a.title = social.network; a.innerHTML = ICONS[social.network];
                 socialContainer.appendChild(a);
             });
 
@@ -110,9 +116,7 @@
                     if (item.thumbnailUrl) {
                         a.classList.add('has-thumbnail');
                         a.innerHTML = `<img src="${item.thumbnailUrl}" alt="" class="link-thumbnail"><span>${item.title}</span>`;
-                    } else {
-                        a.textContent = item.title;
-                    }
+                    } else { a.textContent = item.title; }
                     li.appendChild(a);
                 }
                 linksList.appendChild(li);
@@ -124,19 +128,18 @@
             try {
                 const apiUrl = 'https://reliable-hamster-b1e205.netlify.app/.netlify/functions/get-data';
                 const response = await fetch(apiUrl);
-                if (!response.ok) throw new Error('Network response was not ok');
+                if (!response.ok) throw new Error('La réponse du réseau n\'était pas bonne');
                 const data = await response.json();
                 renderPage(data);
             } catch (error) {
-                container.innerHTML = `<p class="default-message">Could not load links. Please try again later.</p>`;
+                container.innerHTML = `<p class="default-message">Impossible de charger les liens. Veuillez réessayer plus tard.</p>`;
             }
         }
 
         const isIframe = window.self !== window.top;
-
         if (isIframe) {
             window.addEventListener('message', (event) => {
-                const adminOrigin = 'https://harib-naim.fr';
+                const adminOrigin = window.location.origin;
                 if (event.origin !== adminOrigin) {
                     return;
                 }

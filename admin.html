@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,52 +15,52 @@
             </header>
 
             <section class="editor-section">
-                <h2>Profile</h2>
+                <h2>Profil</h2>
                 <div class="form-group">
-                    <label for="profile-pic-url">Profile Picture URL</label>
-                    <input type="text" id="profile-pic-url" data-key="profile.pictureUrl" placeholder="https://example.com/image.png">
+                    <label for="profile-pic-upload">Photo de profil</label>
+                    <input type="file" id="profile-pic-upload" data-key="profile.pictureUrl" accept="image/*" class="file-upload-input">
                 </div>
                 <div class="form-group">
-                    <label for="profile-title">Profile Title</label>
-                    <input type="text" id="profile-title" data-key="profile.title" placeholder="@YourName">
+                    <label for="profile-title">Titre du profil</label>
+                    <input type="text" id="profile-title" data-key="profile.title" placeholder="@VotreNom">
                 </div>
             </section>
             
             <section class="editor-section" id="appearance-section">
-                <h2>Appearance</h2>
+                <h2>Apparence</h2>
             </section>
 
             <section class="editor-section">
-                <h2>Social Icons</h2>
+                <h2>Icônes Sociales</h2>
                 <div id="socials-editor-list"></div>
-                <button id="add-social-btn" data-action="add-social" class="btn btn-secondary">Add Social Icon</button>
+                <button data-action="add-social" class="btn btn-secondary">Ajouter une icône sociale</button>
             </section>
 
             <section class="editor-section">
                 <div class="links-header">
-                    <h2>Links & Headers</h2>
+                    <h2>Liens & En-têtes</h2>
                     <div>
-                        <button id="add-header-btn" data-action="add-header" class="btn btn-secondary">Add Header</button>
-                        <button id="add-link-btn" data-action="add-link" class="btn btn-primary">Add New Link</button>
+                        <button data-action="add-header" class="btn btn-secondary">Ajouter un en-tête</button>
+                        <button data-action="add-link" class="btn btn-primary">Ajouter un nouveau lien</button>
                     </div>
                 </div>
-                <p class="section-description">Drag and drop items to reorder them.</p>
+                <p class="section-description">Glissez-déposez les éléments pour les réorganiser.</p>
                 <div id="links-editor-list"></div>
             </section>
             
             <section class="editor-section" id="settings-section">
-                 <h2>Settings (SEO)</h2>
-                 </section>
+                 <h2>Paramètres (SEO)</h2>
+            </section>
 
              <footer class="editor-header">
-                <p>Changes are saved automatically.</p>
+                <p>Les changements sont sauvegardés automatiquement.</p>
             </footer>
 
         </div>
 
         <div class="preview-pane">
             <div class="preview-header">
-                <h2>Live Preview</h2>
+                <h2>Aperçu en direct</h2>
             </div>
             <div class="iframe-wrapper">
                 <iframe id="preview-frame" src="index.html"></iframe>
