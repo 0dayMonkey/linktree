@@ -140,7 +140,7 @@ export function attachEventListeners() {
         const rect = range.getBoundingClientRect();
         const editorRect = editorContent.getBoundingClientRect();
 
-        let top = rect.top - editorRect.top + editorContent.scrollTop - formatToolbar.offsetHeight - 8;
+        let top = rect.top - editorRect.top + editorContent.scrollTop - formatToolbar.offsetHeight - 4;
         if (top < editorContent.scrollTop) {
             top = rect.bottom - editorRect.top + editorContent.scrollTop + 8;
         }
