@@ -38,7 +38,7 @@ export function getState() {
 }
 
 export function updateAndSave(newState) {
-    state = newState;
+    setState(newState);
     if (document.getElementById('preview-frame').contentWindow) {
         document.getElementById('preview-frame').contentWindow.postMessage({ type: 'update', payload: state }, window.location.origin);
     }
@@ -47,7 +47,7 @@ export function updateAndSave(newState) {
 }
 
 export function handleStateUpdate(key, value, id) {
-    const newState = JSON.parse(JSON.stringify(state));
+    const newState = JSON.parse(JSON.stringify(getState()));
     if (id) {
         const list = [...(newState.links || []), ...(newState.socials || [])];
         const item = list.find(i => i.id === id);
