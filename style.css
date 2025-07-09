@@ -1,45 +1,34 @@
-:root {
-    --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    --font-family: 'Inter', sans-serif;
-    --transition-speed: 0.2s ease-in-out;
-}
-
-/* Light Theme (Default) */
-.light-theme {
-    --background: #fafafa;
-    --text-color: #121212;
-    --button-bg: #ffffff;
-    --button-text: #121212;
-    --footer-text: #707070;
-}
-
-/* Dark Theme */
-.dark-theme {
-    --background: #121212;
-    --text-color: #fafafa;
-    --button-bg: #242424;
-    --button-text: #fafafa;
-    --footer-text: #a0a0a0;
-}
+/*
+  This stylesheet acts as a template.
+  The actual colors, fonts, and styles are set dynamically
+  by the inline script in index.html using CSS variables.
+*/
 
 body {
-    margin: 0;
-    font-family: var(--font-family);
-    background-color: var(--background);
-    color: var(--text-color);
+    font-family: var(--font-family, 'Inter', sans-serif);
+    background: var(--background, #fafafa);
+    background-size: cover;
+    background-position: center;
+    color: var(--text-color, #121212);
     display: flex;
     justify-content: center;
     align-items: flex-start;
     min-height: 100vh;
     padding: 40px 20px;
     box-sizing: border-box;
-    transition: background-color var(--transition-speed), color var(--transition-speed);
+    transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .container {
     width: 100%;
     max-width: 680px;
     text-align: center;
+    animation: fadeIn 0.8s ease-out forwards;
 }
 
 header {
@@ -55,7 +44,7 @@ header {
     border-radius: 50%;
     object-fit: cover;
     margin-bottom: 16px;
-    box-shadow: var(--shadow);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 #profile-title {
@@ -71,9 +60,9 @@ header {
 }
 
 .social-icons a {
-    color: var(--text-color);
+    color: var(--text-color, #121212);
     text-decoration: none;
-    transition: transform var(--transition-speed);
+    transition: transform 0.2s ease-in-out;
 }
 
 .social-icons a:hover {
@@ -84,11 +73,24 @@ header {
     list-style: none;
     padding: 0;
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 .links-list li {
-    margin-bottom: 16px;
+    opacity: 0;
+    animation: fadeIn 0.5s ease-out forwards;
 }
+
+/* Staggered animation for list items */
+.links-list li:nth-child(1) { animation-delay: 0.1s; }
+.links-list li:nth-child(2) { animation-delay: 0.2s; }
+.links-list li:nth-child(3) { animation-delay: 0.3s; }
+.links-list li:nth-child(4) { animation-delay: 0.4s; }
+.links-list li:nth-child(5) { animation-delay: 0.5s; }
+/* Add more if needed */
+
 
 .links-list a {
     display: flex;
@@ -96,20 +98,20 @@ header {
     justify-content: center;
     gap: 15px;
     padding: 16px 20px;
-    background-color: var(--button-bg);
-    color: var(--button-text);
+    background-color: var(--button-bg, #ffffff);
+    color: var(--button-text, #121212);
     text-decoration: none;
     font-size: 1rem;
     font-weight: 600;
-    border-radius: 8px;
-    box-shadow: var(--shadow);
-    transition: transform var(--transition-speed), box-shadow var(--transition-speed), background-color var(--transition-speed);
+    border-radius: var(--button-radius, '8px');
+    box-shadow: var(--button-shadow, '0 4px 12px rgba(0, 0, 0, 0.1)');
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    position: relative;
     text-align: center;
-    position: relative; /* For alignment */
 }
 
 .links-list a.has-thumbnail {
-    justify-content: flex-start; /* Align content to the left */
+    justify-content: flex-start;
 }
 
 .link-thumbnail {
@@ -121,8 +123,8 @@ header {
 
 .links-list a.has-thumbnail span {
     flex-grow: 1;
-    text-align: center; /* Center the text */
-    padding-right: 44px; /* Balance the space taken by the image */
+    text-align: center;
+    padding-right: 44px;
 }
 
 .links-list a:hover {
@@ -132,7 +134,8 @@ header {
 
 footer {
     margin-top: 40px;
-    color: var(--footer-text);
+    color: var(--text-color, #707070);
+    opacity: 0.7;
     font-size: 0.9rem;
 }
 

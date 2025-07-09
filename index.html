@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Linktree</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div id="dynamic-style-container"></div>
     <div class="container">
         <header>
             <img id="profile-picture" src="" alt="Profile Picture" class="profile-picture">
@@ -25,13 +23,6 @@
     </div>
 
     <script>
-        const profilePicEl = document.getElementById('profile-picture');
-        const profileTitleEl = document.getElementById('profile-title');
-        const socialIconsContainer = document.getElementById('social-icons');
-        const linksList = document.getElementById('links-list');
-        const container = document.querySelector('.container');
-
-        // Embedded SVGs for self-contained icons
         const ICONS = {
             github: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.91 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>`,
             twitter: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616v.064c0 2.299 1.634 4.22 3.793 4.66-.426.115-.875.178-1.34.178-.288 0-.568-.027-.84-.079.588 1.834 2.273 3.226 4.312 3.262-1.68 1.332-3.83 2.115-6.177 2.115-.403 0-.8-.024-1.19-.069 2.175 1.433 4.823 2.253 7.693 2.253 9.218 0 14.26-7.824 13.999-14.646.962-.695 1.797-1.562 2.457-2.549z"/></svg>`,
@@ -40,107 +31,148 @@
             youtube: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>`,
         };
 
-        /**
-         * Renders the entire page based on the provided data object.
-         * @param {object} data - The linktreeData object.
-         */
         function renderPage(data) {
-            const { theme, profile, socials, links } = data;
-            
-            // 1. Apply Theme
-            document.body.className = theme || 'light-theme';
+            const { seo, appearance, profile, socials, links } = data;
 
-            // 2. Populate Profile
-            if (profile) {
-                profilePicEl.src = profile.pictureUrl || 'https://via.placeholder.com/96';
-                profileTitleEl.textContent = profile.title || '@YourName';
-                document.title = profile.title || 'Linktree';
+            // 1. Render SEO & Metadata
+            document.title = seo?.title || profile?.title || 'Links';
+            if (document.querySelector("meta[name='description']")) {
+                document.querySelector("meta[name='description']").content = seo?.description || '';
+            } else {
+                const meta = document.createElement('meta');
+                meta.name = 'description';
+                meta.content = seo?.description || '';
+                document.head.appendChild(meta);
+            }
+            if (document.querySelector("link[rel='icon']")) {
+                document.querySelector("link[rel='icon']").href = seo?.faviconUrl || '';
+            } else {
+                const link = document.createElement('link');
+                link.rel = 'icon';
+                link.href = seo?.faviconUrl || '';
+                document.head.appendChild(link);
             }
 
-            // 3. Populate Social Icons
-            socialIconsContainer.innerHTML = '';
-            if (socials) {
-                socials.forEach(social => {
-                    if (!social.url || !ICONS[social.network]) return;
-                    const a = document.createElement('a');
-                    a.href = social.url;
-                    a.target = '_blank';
-                    a.title = social.network;
-                    a.innerHTML = ICONS[social.network];
-                    socialIconsContainer.appendChild(a);
-                });
-            }
+            // 2. Render Appearance (Dynamic Styles)
+            if (appearance) {
+                // Font
+                const fontLink = document.getElementById('dynamic-font-link');
+                if (fontLink) fontLink.remove();
+                if (appearance.fontFamily) {
+                    const newFontLink = document.createElement('link');
+                    newFontLink.id = 'dynamic-font-link';
+                    newFontLink.rel = 'stylesheet';
+                    newFontLink.href = `https://fonts.googleapis.com/css2?family=${appearance.fontFamily.replace(/"/g, "").replace(/ /g, "+")}:wght@400;600;700&display=swap`;
+                    document.head.appendChild(newFontLink);
+                }
 
-            // 4. Populate Links
-            linksList.innerHTML = '';
-            if (links) {
-                links.forEach(link => {
-                    const li = document.createElement('li');
-                    const a = document.createElement('a');
-                    a.href = link.url;
-                    a.target = "_blank";
-                    a.dataset.linkId = link.id; // For click tracking
+                // Background & Buttons
+                let backgroundValue;
+                switch (appearance.background.type) {
+                    case 'image':
+                        backgroundValue = `url(${appearance.background.value})`;
+                        break;
+                    case 'gradient':
+                        backgroundValue = `linear-gradient(135deg, ${appearance.background.value[0]}, ${appearance.background.value[1]})`;
+                        break;
+                    default: // solid
+                        backgroundValue = appearance.background.value;
+                }
 
-                    // Add thumbnail if available
-                    if (link.thumbnailUrl) {
-                        a.classList.add('has-thumbnail');
-                        a.innerHTML = `
-                            <img src="${link.thumbnailUrl}" alt="" class="link-thumbnail">
-                            <span>${link.title}</span>`;
-                    } else {
-                        a.textContent = link.title;
+                const styles = `
+                    :root {
+                        --font-family: ${appearance.fontFamily || 'Inter, sans-serif'};
+                        --background: ${backgroundValue};
+                        --button-bg: ${appearance.button.backgroundColor};
+                        --button-text: ${appearance.button.textColor};
+                        --button-radius: ${appearance.button.borderRadius};
+                        --button-shadow: ${appearance.button.hasShadow ? '0 4px 12px rgba(0, 0, 0, 0.1)' : 'none'};
+                        --text-color: ${appearance.textColor};
                     }
-                    
-                    li.appendChild(a);
-                    linksList.appendChild(li);
-                });
+                `;
+                document.getElementById('dynamic-style-container').innerHTML = `<style>${styles}</style>`;
             }
-        }
-        
-        /**
-         * Handles link clicks to track analytics.
-         */
-        function handleLinkClick(e) {
-            const linkElement = e.target.closest('a[data-link-id]');
-            if (!linkElement) return;
 
-            const linkId = parseInt(linkElement.dataset.linkId, 10);
+            // 3. Render Profile
+            document.getElementById('profile-picture').src = profile?.pictureUrl || '';
+            document.getElementById('profile-title').textContent = profile?.title || '';
+
+            // 4. Render Socials
+            const socialContainer = document.getElementById('social-icons');
+            socialContainer.innerHTML = '';
+            socials?.forEach(social => {
+                if (!social.url || !ICONS[social.network]) return;
+                const a = document.createElement('a');
+                a.href = social.url;
+                a.target = '_blank';
+                a.title = social.network;
+                a.innerHTML = ICONS[social.network];
+                socialContainer.appendChild(a);
+            });
+
+            // 5. Render Links (with Scheduling)
+            const linksList = document.getElementById('links-list');
+            linksList.innerHTML = '';
+            const now = new Date();
+            const visibleLinks = links?.filter(link => {
+                const hasStart = link.schedule?.start;
+                const hasEnd = link.schedule?.end;
+                if (!hasStart && !hasEnd) return true; // No schedule, always show
+                const start = hasStart ? new Date(link.schedule.start) : null;
+                const end = hasEnd ? new Date(link.schedule.end) : null;
+                if (start && now < start) return false; // Not yet active
+                if (end && now > end) return false; // Expired
+                return true;
+            });
+
+            visibleLinks?.forEach(link => {
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                a.href = link.url;
+                a.target = "_blank";
+                a.dataset.linkId = link.id;
+                
+                if (link.thumbnailUrl) {
+                    a.classList.add('has-thumbnail');
+                    a.innerHTML = `<img src="${link.thumbnailUrl}" alt="" class="link-thumbnail"><span>${link.title}</span>`;
+                } else {
+                    a.textContent = link.title;
+                }
+                
+                li.appendChild(a);
+                linksList.appendChild(li);
+            });
+        }
+
+        function handleLinkClick(e) {
+            const linkEl = e.target.closest('a[data-link-id]');
+            if (!linkEl) return;
+            const linkId = parseInt(linkEl.dataset.linkId, 10);
             const dataString = localStorage.getItem('linktreeData');
             if (!dataString) return;
-            
             let data = JSON.parse(dataString);
             const link = data.links.find(l => l.id === linkId);
-            
             if (link) {
                 link.clicks = (link.clicks || 0) + 1;
                 localStorage.setItem('linktreeData', JSON.stringify(data));
-                // Note: The admin page won't see this update until it reloads/re-reads data.
-                // This is a reasonable trade-off in a backend-less system.
             }
         }
 
         // --- INITIALIZATION ---
-
-        // Listen for live updates from the admin panel
         window.addEventListener('message', (event) => {
-            // A basic security check
             if (event.origin !== window.location.origin) return;
             if (event.data.type === 'update') {
                 renderPage(event.data.payload);
             }
         });
 
-        // Add a single click listener to the list for efficiency
-        linksList.addEventListener('click', handleLinkClick);
+        document.getElementById('links-list').addEventListener('click', handleLinkClick);
 
-        // Initial render on page load
         const initialData = localStorage.getItem('linktreeData');
         if (initialData) {
             renderPage(JSON.parse(initialData));
         } else {
-            container.innerHTML = `
-                <p class="default-message">This page has not been configured yet. 
-                Visit <a href="/admin.html">the admin page</a> to set it up.</p>`;
+            document.querySelector('.container').innerHTML = `<p class="default-message">This page has not been configured yet. Visit <a href="/admin.html">the admin page</a> to get started.</p>`;
         }
     </script>
 </body>

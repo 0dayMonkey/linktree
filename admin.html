@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Linktree</title>
+    <title>Admin Panel - Linktree Pro</title>
     <link rel="stylesheet" href="admin.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
         <div class="editor-pane">
             <header class="editor-header">
                 <h1>Linktree Editor</h1>
-                <p>Changes are sent to the preview live. Your public page is at <a href="/index.html" target="_blank">/index.html</a></p>
+                <p>Changes are live. Your public page is at <a href="/index.html" target="_blank">/index.html</a></p>
             </header>
 
             <section class="editor-section">
@@ -26,19 +26,13 @@
                 </div>
             </section>
             
-            <section class="editor-section">
+            <section class="editor-section" id="appearance-section">
                 <h2>Appearance</h2>
-                <div class="form-group" id="theme-selector">
-                    <label class="radio-label"><input type="radio" name="theme" value="light-theme"> Light</label>
-                    <label class="radio-label"><input type="radio" name="theme" value="dark-theme"> Dark</label>
-                </div>
-            </section>
+                </section>
 
             <section class="editor-section">
                 <h2>Social Icons</h2>
-                <p class="section-description">Add links to your social profiles. Supported networks are auto-detected.</p>
-                <div id="socials-editor-list">
-                    </div>
+                <div id="socials-editor-list"></div>
                 <button id="add-social-btn" class="btn btn-secondary">Add Social Icon</button>
             </section>
 
@@ -48,9 +42,12 @@
                     <button id="add-link-btn" class="btn btn-primary">Add New Link</button>
                 </div>
                 <p class="section-description">Drag and drop links to reorder them.</p>
-                <div id="links-editor-list">
-                    </div>
+                <div id="links-editor-list"></div>
             </section>
+
+            <section class="editor-section" id="settings-section">
+                <h2>Settings (SEO)</h2>
+                 </section>
         </div>
 
         <div class="preview-pane">
