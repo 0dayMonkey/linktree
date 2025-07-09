@@ -122,31 +122,27 @@ export function attachEventListeners() {
     let currentTargetInput = null;
 
     if (!editorContent) return;
-    
-    const showFormatToolbar = (target) => {
-        currentTargetInput = target;
-        const selection = window.getSelection();
-        if (!selection || selection.rangeCount === 0 || selection.toString().trim() === '') {
-            formatToolbar.style.display = 'none';
-            return;
-        }
-        
-        const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
-        
-        // --- CORRECTION CLÉ : Utiliser editorContent comme référence pour le scroll et le positionnement ---
-        const editorRect = editorContent.getBoundingClientRect();
 
-        formatToolbar.style.display = 'flex';
-        formatToolbar.style.top = `${rect.top - editorRect.top + editorContent.scrollTop - formatToolbar.offsetHeight - 5}px`;
-        formatToolbar.style.left = `${rect.left - editorRect.left + (rect.width / 2) - (formatToolbar.offsetWidth / 2)}px`;
+    const toggleFormatToolbar = (button) => {
+        const wrapper = button.closest('.formatted-input-wrapper');
+        if (!wrapper) return;
+        
+        currentTargetInput = wrapper.querySelector('.formatted-text-input');
+        const isVisible = formatToolbar.classList.contains('visible');
+        
+        document.querySelectorAll('.format-c-btn.active').forEach(b => b.classList.remove('active'));
+        formatToolbar.classList.remove('visible');
+
+        if (!isVisible || (isVisible && button !== formatToolbar.currentButton)) {
+            button.classList.add('active');
+            formatToolbar.style.top = `${button.offsetTop}px`;
+            formatToolbar.style.left = `${button.offsetLeft - formatToolbar.offsetWidth - 8}px`;
+            formatToolbar.classList.add('visible');
+            formatToolbar.currentButton = button;
+        } else {
+            formatToolbar.currentButton = null;
+        }
     };
-
-    editorContent.addEventListener('mouseup', (e) => {
-        if (e.target.matches('.formatted-text-input')) {
-            setTimeout(() => showFormatToolbar(e.target), 1);
-        }
-    });
     
     formatToolbar.addEventListener('mousedown', (e) => {
         e.preventDefault();
@@ -169,7 +165,6 @@ export function attachEventListeners() {
         const id = currentTargetInput.closest('[data-id]') ? parseInt(currentTargetInput.closest('[data-id]').dataset.id, 10) : null;
         
         handleStateUpdate(key, newText, id);
-        formatToolbar.style.display = 'none';
     });
 
 
@@ -194,40 +189,45 @@ export function attachEventListeners() {
     }, 400));
 
     editorContent.addEventListener('click', async (e) => {
-        if (e.target.closest('.custom-select')) {
+        const actionTarget = e.target.closest('[data-action]');
+        
+        if (actionTarget) {
+            const action = actionTarget.dataset.action;
+            e.preventDefault();
+
+            if (action === 'toggle-format-toolbar') {
+                toggleFormatToolbar(actionTarget);
+                return;
+            }
+
+            const currentState = JSON.parse(JSON.stringify(getState()));
+            let stateChanged = true;
+
+            if (action === 'delete') {
+                const itemEl = e.target.closest('[data-id]');
+                const confirmed = await showConfirmation('Êtes-vous sûr(e) ?', 'Cette action est irréversible.');
+                if (!itemEl || !confirmed) return;
+                const id = parseInt(itemEl.dataset.id, 10);
+                currentState.links = (currentState.links || []).filter(item => item.id !== id);
+                currentState.socials = (currentState.socials || []).filter(item => item.id !== id);
+            } else if (action === 'add-link') {
+                currentState.links.push({ type: 'link', id: Date.now(), title: 'Nouveau Lien', url: 'https://', order: currentState.links.length });
+            } else if (action === 'add-header') {
+                currentState.links.push({ type: 'header', id: Date.now(), title: 'Nouvel En-tête', order: currentState.links.length });
+            } else if (action === 'add-social') {
+                currentState.socials.push({ id: Date.now(), url: 'https://', network: 'website', order: currentState.socials.length });
+            } else {
+                stateChanged = false;
+            }
+
+            if (stateChanged) updateAndSave(currentState);
+        } else if (e.target.closest('.custom-select')) {
              if (e.target.closest('[data-value]')) {
                 handleSelectOption(e);
             } else {
                 handleCustomSelect(e);
             }
         }
-
-        const actionTarget = e.target.closest('[data-action]');
-        if (!actionTarget) return;
-        const action = actionTarget.dataset.action;
-        e.preventDefault();
-        
-        const currentState = JSON.parse(JSON.stringify(getState()));
-        let stateChanged = true;
-
-        if (action === 'delete') {
-            const itemEl = e.target.closest('[data-id]');
-            const confirmed = await showConfirmation('Êtes-vous sûr(e) ?', 'Cette action est irréversible.');
-            if (!itemEl || !confirmed) return;
-            const id = parseInt(itemEl.dataset.id, 10);
-            currentState.links = (currentState.links || []).filter(item => item.id !== id);
-            currentState.socials = (currentState.socials || []).filter(item => item.id !== id);
-        } else if (action === 'add-link') {
-            currentState.links.push({ type: 'link', id: Date.now(), title: 'Nouveau Lien', url: 'https://', order: currentState.links.length });
-        } else if (action === 'add-header') {
-            currentState.links.push({ type: 'header', id: Date.now(), title: 'Nouvel En-tête', order: currentState.links.length });
-        } else if (action === 'add-social') {
-            currentState.socials.push({ id: Date.now(), url: 'https://', network: 'website', order: currentState.socials.length });
-        } else {
-            stateChanged = false;
-        }
-
-        if (stateChanged) updateAndSave(currentState);
     });
     
     window.addEventListener('message', e => {
@@ -251,11 +251,13 @@ export function attachEventListeners() {
 
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.custom-select')) {
-            document.querySelectorAll('.custom-select .select-items').forEach(item => item.classList.add('select-hide'));
+            document.querySelectorAll('.select-items').forEach(item => item.classList.add('select-hide'));
             document.querySelectorAll('.select-selected').forEach(item => item.classList.remove('select-arrow-active'));
         }
-        if (!e.target.closest('#inline-format-toolbar') && !e.target.matches('.formatted-text-input')) {
-            formatToolbar.style.display = 'none';
+        if (!e.target.closest('.formatted-input-wrapper') && !e.target.closest('.inline-toolbar')) {
+            formatToolbar.classList.remove('visible');
+            document.querySelectorAll('.format-c-btn.active').forEach(b => b.classList.remove('active'));
+            formatToolbar.currentButton = null;
         }
         hideContextMenu();
     });
