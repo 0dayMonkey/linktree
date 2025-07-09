@@ -8,7 +8,6 @@
 </head>
 <body>
     <div id="dynamic-style-container"></div>
-
     <div class="container">
         <header>
             <img id="profile-picture" src="" alt="Photo de profil" class="profile-picture" data-editable-id="profile.pictureUrl">
@@ -42,12 +41,20 @@
         };
 
         function setFavicon(url) {
-            if (!url) return;
-            let link = document.querySelector("link[rel*='icon']") || document.createElement('link');
-            link.type = url.includes('svg') ? 'image/svg+xml' : 'image/x-icon';
-            link.rel = 'shortcut icon';
+            if (!url || !url.startsWith('data:')) return;
+            let link = document.querySelector("link[rel*='icon']");
+            if (!link) {
+                link = document.createElement('link');
+                link.rel = 'shortcut icon';
+                document.head.appendChild(link);
+            }
+            const mimeTypeMatch = url.match(/data:([^;]+);/);
+            if (mimeTypeMatch && mimeTypeMatch[1]) {
+                link.type = mimeTypeMatch[1];
+            } else {
+                link.type = 'image/x-icon';
+            }
             link.href = url;
-            document.getElementsByTagName('head')[0].appendChild(link);
         }
 
         function renderPage(data) {
@@ -63,7 +70,7 @@
                     fontLink = document.createElement('link');
                     fontLink.id = 'dynamic-font-link';
                     fontLink.rel = 'stylesheet';
-                    document.head.appendChild(fontLink); // ** CORRECTION : la variable est maintenant correcte **
+                    document.head.appendChild(fontLink);
                 }
                 
                 if (appearance.fontFamily) {

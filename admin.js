@@ -37,12 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
             modalContainer.classList.add('is-visible');
-
             const closeModal = (result) => {
                 modalContainer.classList.remove('is-visible');
                 resolve(result);
             };
-
             document.getElementById('modal-confirm').addEventListener('click', () => closeModal(true));
             document.getElementById('modal-cancel').addEventListener('click', () => closeModal(false));
         });
@@ -119,13 +117,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- FONCTIONS DE RENDU (GÉNÉRATION DU HTML) ---
     const render = () => {
         if (!editorContent || !state.profile) return;
-        
         const focusedElement = document.activeElement;
         const focusedElementId = focusedElement ? focusedElement.id : null;
         const selectionStart = focusedElement ? focusedElement.selectionStart : null;
         const selectionEnd = focusedElement ? focusedElement.selectionEnd : null;
         const scrollPosition = editorContent.parentElement.scrollTop;
-
         editorContent.innerHTML = `
             ${createProfileCard(state.profile)}
             ${createAppearanceCard(state.appearance)}
@@ -133,12 +129,10 @@ document.addEventListener('DOMContentLoaded', () => {
             ${createItemsCard('Liens & En-têtes', state.links || [], createLinkItemHTML, 'add-link', 'Ajouter un lien')}
             ${createSettingsCard(state.seo)}
         `;
-        
         if (focusedElementId) {
             const reFocusedElement = document.getElementById(focusedElementId);
             if (reFocusedElement) {
                 reFocusedElement.focus();
-                // ** CORRECTION : Vérifier si l'élément supporte setSelectionRange **
                 if (typeof reFocusedElement.setSelectionRange === 'function') {
                    reFocusedElement.setSelectionRange(selectionStart, selectionEnd);
                 }
@@ -147,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
         editorContent.parentElement.scrollTop = scrollPosition;
     };
     
-    const createFileUploadHTML = (key, currentSrc, label, id = '') => {
+    const createFileUploadHTML = (key, currentSrc, label, id = '', accept = 'image/*') => {
         const uniqueId = `upload-${key.replace(/\./g, '-')}-${id || 'main'}`;
         return `<div class="form-group">
             <label>${label}</label>
@@ -155,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${currentSrc && currentSrc.startsWith('data:image') ? `<img src="${currentSrc}" alt="Aperçu" class="file-upload-preview">` : ''}
                 <span class="file-upload-text">${currentSrc && currentSrc.startsWith('data:image') ? 'Cliquez pour changer' : '<strong>Cliquez pour téléverser</strong>'}</span>
             </label>
-            <input type="file" id="${uniqueId}" data-key="${key}" class="file-upload-input" accept="image/*">
+            <input type="file" id="${uniqueId}" data-key="${key}" class="file-upload-input" accept="${accept}">
         </div>`;
     };
     
@@ -181,30 +175,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="text" id="profile-title" data-key="profile.title" value="${profile.title || ''}" placeholder="@VotreNom">
                 </div>
             </div>
-        </div>
-    `;
+        </div>`;
     
     const createAppearanceCard = (appearance) => {
         const fontOpts = Object.entries(FONT_OPTIONS).map(([n, v]) => `<option value="${v}" style="font-family: ${v};" ${appearance.fontFamily === v ? 'selected' : ''}>${n}</option>`).join('');
         const bg = appearance.background || {};
-        
-        const gradientOpts = Object.entries(GRADIENT_OPTIONS).map(([key, { name, value }]) => `<option value="${key}" ${bg.value === key ? 'selected' : ''}>${name}</option>`).join('');
-        
+        const gradientOpts = Object.entries(GRADIENT_OPTIONS).map(([key, { name }]) => `<option value="${key}" ${bg.value === key ? 'selected' : ''}>${name}</option>`).join('');
         const bgControls = () => {
             switch(bg.type) {
-                case 'solid':
-                    return createColorInputHTML('appearance.background.value', bg.value, 'Couleur de fond');
-                case 'gradient':
-                    return `<div class="form-group"><label for="gradient-select">Choisir un dégradé</label><select id="gradient-select" data-key="appearance.background.value">${gradientOpts}</select></div>`;
-                case 'image':
-                    return createFileUploadHTML('appearance.background.value', bg.value, 'Image de fond');
-                default:
-                    return '';
+                case 'solid': return createColorInputHTML('appearance.background.value', bg.value, 'Couleur de fond');
+                case 'gradient': return `<div class="form-group"><label for="gradient-select">Choisir un dégradé</label><select id="gradient-select" data-key="appearance.background.value">${gradientOpts}</select></div>`;
+                case 'image': return createFileUploadHTML('appearance.background.value', bg.value, 'Image de fond');
+                default: return '';
             }
         };
-
-        return `
-        <div class="card" id="card-appearance">
+        return `<div class="card" id="card-appearance">
             <div class="card-header"><h2>Apparence</h2></div>
             <div class="card-body">
                 <div class="form-group"><label for="font-select">Police</label><select id="font-select" data-key="appearance.fontFamily">${fontOpts}</select></div>
@@ -217,15 +202,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${createColorInputHTML('appearance.button.textColor', appearance.button.textColor, 'Texte des boutons')}
                 </div>
             </div>
-        </div>
-        `;
+        </div>`;
     };
 
     const createItemsCard = (title, items, itemRenderer, addAction, addLabel) => {
         const itemsHTML = (items || []).map(item => itemRenderer(item)).join('');
         return `<div class="card">
             <div class="card-header"><h2>${title}</h2><button data-action="${addAction}" class="btn btn-secondary">${addLabel}</button></div>
-            <div class="card-body">${itemsHTML.length > 0 ? itemsHTML : '<p class="empty-state">Aucun élément. Cliquez sur "Ajouter" pour commencer.</p>'}</div>
+            <div class="card-body">${itemsHTML.length > 0 ? itemsHTML : '<p class="empty-state">Aucun élément.</p>'}</div>
         </div>`;
     };
     
@@ -253,16 +237,20 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`;
     };
     
-    const createSettingsCard = (seo) => `
+    const createSettingsCard = (seo) => {
+        // CORRECTION : Spécifier les types de fichiers pour le favicon
+        const faviconAccept = "image/x-icon,image/png,image/svg+xml,image/vnd.microsoft.icon";
+        return `
         <div class="card" id="card-settings">
             <div class="card-header"><h2>Paramètres (SEO)</h2></div>
             <div class="card-body">
                 <div class="form-group"><label for="seo-title">Titre</label><input type="text" id="seo-title" data-key="seo.title" value="${seo.title || ''}"></div>
                 <div class="form-group"><label for="seo-desc">Description</label><input type="text" id="seo-desc" data-key="seo.description" value="${seo.description || ''}"></div>
-                ${createFileUploadHTML('seo.faviconUrl', seo.faviconUrl, 'Favicon')}
+                ${createFileUploadHTML('seo.faviconUrl', seo.faviconUrl, 'Favicon', '', faviconAccept)}
             </div>
         </div>
     `;
+    };
     
     const handleFileUploadWrapper = async (e) => {
         const file = e.target.files[0];
@@ -303,7 +291,6 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const newState = JSON.parse(JSON.stringify(state));
             let stateChanged = true;
-
             if (action === 'delete') {
                 const itemEl = e.target.closest('[data-id]');
                 const confirmed = await showConfirmation('Êtes-vous sûr(e) ?', 'Cette action est irréversible.');
@@ -318,14 +305,12 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (action === 'add-social') {
                 newState.socials.push({ id: Date.now(), url: 'https://', network: 'website' });
             } else { stateChanged = false; }
-
             if (stateChanged) updateAndSave(newState);
         });
         
         window.addEventListener('message', e => {
             if (e.data.type === 'showContextMenu') showContextMenu(e.data.payload);
         });
-
         document.addEventListener('click', () => hideContextMenu());
     }
 
@@ -379,7 +364,6 @@ document.addEventListener('DOMContentLoaded', () => {
             saveStatusEl.style.color = 'var(--success-color)';
             render();
             attachEventListeners();
-
             previewFrame.addEventListener('load', () => {
                 if (previewFrame.contentWindow && state.profile) {
                     previewFrame.contentWindow.postMessage({ type: 'update', payload: state }, window.location.origin);
