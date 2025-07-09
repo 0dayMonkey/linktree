@@ -59,9 +59,13 @@
                     fontLink.rel = 'stylesheet';
                     document.head.appendChild(fontLink);
                 }
+                
+                // --- CORRECTION CLÉ POUR LES POLICES ---
                 if (appearance.fontFamily) {
-                    fontLink.href = `https://fonts.googleapis.com/css2?family=${appearance.fontFamily.replace(/"/g, "").replace(/ /g, "+")}:wght@400;600;700&display=swap`;
+                    const fontName = appearance.fontFamily.split(',')[0].replace(/'/g, '').trim();
+                    fontLink.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, "+")}:wght@400;600;700&display=swap`;
                 }
+                // --- FIN DE LA CORRECTION ---
 
                 let backgroundValue;
                 const bg = appearance.background;
@@ -136,18 +140,11 @@
             document.body.addEventListener('contextmenu', e => {
                 const target = e.target.closest('[data-editable-id]');
                 if (!target) return;
-
                 e.preventDefault();
-
                 const id = target.dataset.editableId;
-                
                 window.parent.postMessage({
                     type: 'showContextMenu',
-                    payload: {
-                        id: id,
-                        x: e.clientX,
-                        y: e.clientY
-                    }
+                    payload: { id, x: e.clientX, y: e.clientY }
                 }, '*');
             });
         }
@@ -155,9 +152,7 @@
         const isIframe = window.self !== window.top;
         if (isIframe) {
             window.addEventListener('message', event => {
-                if (event.data.type === 'update') {
-                    renderPage(event.data.payload);
-                }
+                if (event.data.type === 'update') renderPage(event.data.payload);
             });
             attachContextMenuListeners();
         } else {
