@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linktree</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img id="profile-picture" src="" alt="Profile Picture" class="profile-picture">
+            <h1 id="profile-title"></h1>
+            <div id="social-icons" class="social-icons">
+                </div>
+        </header>
+        <main>
+            <ul id="links-list" class="links-list">
+                </ul>
+        </main>
+        <footer>
+            <p>Built with Vanilla JS</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const data = localStorage.getItem('linktreeData');
+            
+            if (!data) {
+                document.querySelector('.container').innerHTML = `
+                    <p class="default-message">This page has not been configured yet. 
+                    Visit <a href="/admin.html">the admin page</a> to set it up.</p>`;
+                return;
+            }
+
+            const linktreeData = JSON.parse(data);
+
+            // 1. Apply Theme
+            document.body.className = linktreeData.theme || 'light-theme';
+
+            // 2. Populate Profile Information
+            const { profile, links, socials } = linktreeData;
+            if (profile) {
+                document.getElementById('profile-picture').src = profile.pictureUrl || 'https://via.placeholder.com/96';
+                document.getElementById('profile-title').textContent = profile.title || '@YourName';
+                document.title = profile.title || 'Linktree';
+            }
+
+            // 3. Populate Social Icons
+            const socialIconsContainer = document.getElementById('social-icons');
+            if (socials && socials.length > 0) {
+                socials.forEach(social => {
+                    if (!social.url) return;
+                    const a = document.createElement('a');
+                    a.href = social.url;
+                    a.target = '_blank';
+                    // Simple text-based icons for vanilla JS dependency-free implementation
+                    a.innerHTML = `<img src="https://icongr.am/devicon/${social.network}-original.svg?size=28&color=currentColor" alt="${social.network}">`;
+                    socialIconsContainer.appendChild(a);
+                });
+            }
+
+            // 4. Populate Links
+            const linksList = document.getElementById('links-list');
+            if (links && links.length > 0) {
+                links.forEach(link => {
+                    const li = document.createElement('li');
+                    const a = document.createElement('a');
+                    a.href = link.url;
+                    a.textContent = link.title;
+                    a.target = "_blank";
+                    li.appendChild(a);
+                    linksList.appendChild(li);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

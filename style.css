@@ -1,0 +1,125 @@
+:root {
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --font-family: 'Inter', sans-serif;
+    --transition-speed: 0.2s ease-in-out;
+}
+
+/* Light Theme (Default) */
+.light-theme {
+    --background: #fafafa;
+    --text-color: #121212;
+    --button-bg: #ffffff;
+    --button-text: #121212;
+    --footer-text: #707070;
+}
+
+/* Dark Theme */
+.dark-theme {
+    --background: #121212;
+    --text-color: #fafafa;
+    --button-bg: #242424;
+    --button-text: #fafafa;
+    --footer-text: #a0a0a0;
+}
+
+body {
+    margin: 0;
+    font-family: var(--font-family);
+    background-color: var(--background);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 40px 20px;
+    box-sizing: border-box;
+    transition: background-color var(--transition-speed), color var(--transition-speed);
+}
+
+.container {
+    width: 100%;
+    max-width: 680px;
+    text-align: center;
+}
+
+header {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.profile-picture {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+}
+
+#profile-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.social-icons {
+    margin-top: 16px;
+    display: flex;
+    gap: 20px;
+}
+
+.social-icons a {
+    color: var(--text-color);
+    text-decoration: none;
+    transition: transform var(--transition-speed);
+}
+
+.social-icons a:hover {
+    transform: scale(1.15);
+}
+
+.links-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.links-list li {
+    margin-bottom: 16px;
+}
+
+.links-list a {
+    display: block;
+    padding: 18px 20px;
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    transition: transform var(--transition-speed), box-shadow var(--transition-speed), background-color var(--transition-speed);
+}
+
+.links-list a:hover {
+    transform: scale(1.03);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+footer {
+    margin-top: 40px;
+    color: var(--footer-text);
+    font-size: 0.9rem;
+}
+
+.default-message {
+    font-size: 1.1rem;
+    color: var(--text-color);
+    margin-top: 50px;
+}
+.default-message a {
+    color: #3498db;
+    text-decoration: none;
+}
