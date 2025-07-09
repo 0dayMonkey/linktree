@@ -35,6 +35,12 @@
             website: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm0 22c-5.514 0-10-4.486-10-10s4.486-10 10-10 10 4.486 10 10-4.486 10-10 10zm-1-12h-3v2h3v3h2v-3h3v-2h-3v-3h-2v3z"/></svg>`,
         };
 
+        const GRADIENTS = {
+            "sunrise": "linear-gradient(135deg, #FFD3A5, #FD6585)",
+            "ocean": "linear-gradient(135deg, #2E3192, #1BFFFF)",
+            "dusk": "linear-gradient(135deg, #304352, #d7d2cc)"
+        };
+
         function setFavicon(url) {
             if (!url) return;
             let link = document.querySelector("link[rel*='icon']") || document.createElement('link');
@@ -57,23 +63,21 @@
                     fontLink = document.createElement('link');
                     fontLink.id = 'dynamic-font-link';
                     fontLink.rel = 'stylesheet';
-                    document.head.appendChild(fontLink);
+                    document.head.appendChild(link);
                 }
                 
-                // --- CORRECTION CLÉ POUR LES POLICES ---
                 if (appearance.fontFamily) {
                     const fontName = appearance.fontFamily.split(',')[0].replace(/'/g, '').trim();
                     fontLink.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, "+")}:wght@400;600;700&display=swap`;
                 }
-                // --- FIN DE LA CORRECTION ---
 
                 let backgroundValue;
                 const bg = appearance.background;
                 if (bg.type === 'image') {
                     backgroundValue = `url(${bg.value})`;
                 } else if (bg.type === 'gradient') {
-                    const colors = Array.isArray(bg.value) ? bg.value : bg.value.split(',');
-                    backgroundValue = `linear-gradient(135deg, ${colors[0]}, ${colors[1]})`;
+                    // NOUVEAU : Utiliser la map de dégradés
+                    backgroundValue = GRADIENTS[bg.value] || bg.value; 
                 } else {
                     backgroundValue = bg.value;
                 }

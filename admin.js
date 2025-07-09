@@ -17,6 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const FONT_OPTIONS = { "Inter": "'Inter', sans-serif", "Roboto": "'Roboto', sans-serif", "Montserrat": "'Montserrat', sans-serif", "Lato": "'Lato', sans-serif", "Playfair Display": "'Playfair Display', serif" };
     const SOCIAL_OPTIONS = { "twitter": "Twitter", "instagram": "Instagram", "facebook": "Facebook", "linkedin": "LinkedIn", "github": "GitHub", "youtube": "YouTube", "tiktok": "TikTok", "website": "Site Web" };
+    // NOUVEAU : Dégradés prédéfinis
+    const GRADIENT_OPTIONS = {
+        "sunrise": { name: "Aurore", value: "linear-gradient(135deg, #FFD3A5, #FD6585)" },
+        "ocean": { name: "Océan", value: "linear-gradient(135deg, #2E3192, #1BFFFF)" },
+        "dusk": { name: "Crépuscule", value: "linear-gradient(135deg, #304352, #d7d2cc)" }
+    };
 
     // --- NOUVEAU : Logique du Modal de Confirmation ---
     const showConfirmation = (title, text) => {
@@ -146,8 +152,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<div class="form-group">
             <label>${label}</label>
             <label class="file-upload-wrapper" for="${uniqueId}">
-                ${currentSrc ? `<img src="${currentSrc}" alt="Aperçu" class="file-upload-preview">` : ''}
-                <span class="file-upload-text">${currentSrc ? 'Cliquez pour changer' : '<strong>Cliquez pour téléverser</strong>'}</span>
+                ${currentSrc && currentSrc.startsWith('data:image') ? `<img src="${currentSrc}" alt="Aperçu" class="file-upload-preview">` : ''}
+                <span class="file-upload-text">${currentSrc && currentSrc.startsWith('data:image') ? 'Cliquez pour changer' : '<strong>Cliquez pour téléverser</strong>'}</span>
             </label>
             <input type="file" id="${uniqueId}" data-key="${key}" class="file-upload-input" accept="image/*">
         </div>`;
@@ -181,7 +187,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const createAppearanceCard = (appearance) => {
         const fontOpts = Object.entries(FONT_OPTIONS).map(([n, v]) => `<option value="${v}" style="font-family: ${v};" ${appearance.fontFamily === v ? 'selected' : ''}>${n}</option>`).join('');
         const bg = appearance.background || {};
-        const bgValue = Array.isArray(bg.value) ? bg.value : (bg.value || '').split(',');
+        
+        // NOUVEAU : Logique pour les dégradés prédéfinis
+        const gradientOpts = Object.entries(GRADIENT_OPTIONS).map(([key, { name, value }]) => `<option value="${key}" ${bg.value === key ? 'selected' : ''}>${name}</option>`).join('');
+        
+        const bgControls = () => {
+            switch(bg.type) {
+                case 'solid':
+                    return createColorInputHTML('appearance.background.value', bg.value, 'Couleur de fond');
+                case 'gradient':
+                    return `<div class="form-group"><label for="gradient-select">Choisir un dégradé</label><select id="gradient-select" data-key="appearance.background.value">${gradientOpts}</select></div>`;
+                case 'image':
+                    return createFileUploadHTML('appearance.background.value', bg.value, 'Image de fond');
+                default:
+                    return '';
+            }
+        };
+
         return `
         <div class="card" id="card-appearance">
             <div class="card-header"><h2>Apparence</h2></div>
@@ -189,21 +211,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="form-group"><label for="font-select">Police</label><select id="font-select" data-key="appearance.fontFamily">${fontOpts}</select></div>
                 ${createColorInputHTML('appearance.textColor', appearance.textColor, 'Couleur du texte')}
                 <div class="form-group"><label for="bg-type-select">Type de fond</label><select id="bg-type-select" data-key="appearance.background.type"><option value="solid" ${bg.type === 'solid' ? 'selected' : ''}>Couleur unie</option><option value="gradient" ${bg.type === 'gradient' ? 'selected' : ''}>Dégradé</option><option value="image" ${bg.type === 'image' ? 'selected' : ''}>Image</option></select></div>
-                <div id="background-controls">
-                    ${bg.type === 'solid' ? createColorInputHTML('appearance.background.value', bg.value, 'Couleur de fond') : ''}
-                    ${bg.type === 'gradient' ? `<div class="form-grid">
-                        ${createColorInputHTML('appearance.background.value.0', bgValue[0], 'Couleur 1')}
-                        ${createColorInputHTML('appearance.background.value.1', bgValue[1], 'Couleur 2')}
-                    </div>` : ''}
-                    ${bg.type === 'image' ? createFileUploadHTML('appearance.background.value', bg.value, 'Image de fond') : ''}
-                </div>
+                <div id="background-controls">${bgControls()}</div>
                 <hr style="border:none; border-top:1px solid var(--border-color); margin: 24px 0;">
                 <div class="form-grid">
                     ${createColorInputHTML('appearance.button.backgroundColor', appearance.button.backgroundColor, 'Fond des boutons')}
                     ${createColorInputHTML('appearance.button.textColor', appearance.button.textColor, 'Texte des boutons')}
                 </div>
             </div>
-        </div>`;
+        </div>
+        `;
     };
 
     const createItemsCard = (title, items, itemRenderer, addAction, addLabel) => {
@@ -218,8 +234,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const socialOpts = Object.entries(SOCIAL_OPTIONS).map(([key, name]) => `<option value="${key}" ${item.network === key ? 'selected' : ''}>${name}</option>`).join('');
         return `<div class="item-container" data-id="${item.id}">
             <div class="item-header"><span>Icône : ${SOCIAL_OPTIONS[item.network] || item.network}</span><button data-action="delete" class="btn btn-danger">✖</button></div>
-            <div class="form-group"><label for="social-network-${item.id}">Réseau</label><select id="social-network-${item.id}" data-key="network" data-item-id="${item.id}">${socialOpts}</select></div>
-            <div class="form-group"><label for="social-url-${item.id}">URL ou Pseudo</label><input type="text" id="social-url-${item.id}" data-key="url" data-item-id="${item.id}" value="${item.url || ''}"></div>
+            <div class="form-group"><label for="social-network-${item.id}">Réseau</label><select id="social-network-${item.id}" data-key="network">${socialOpts}</select></div>
+            <div class="form-group"><label for="social-url-${item.id}">URL ou Pseudo</label><input type="text" id="social-url-${item.id}" data-key="url" value="${item.url || ''}"></div>
         </div>`;
     };
 
@@ -227,13 +243,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (item.type === 'header') {
             return `<div class="item-container" data-id="${item.id}">
                 <div class="item-header"><span>En-tête</span><button data-action="delete" class="btn btn-danger">✖</button></div>
-                <div class="form-group"><label for="header-title-${item.id}">Texte de l'en-tête</label><input type="text" id="header-title-${item.id}" data-key="title" data-item-id="${item.id}" value="${item.title || ''}"></div>
+                <div class="form-group"><label for="header-title-${item.id}">Texte</label><input type="text" id="header-title-${item.id}" data-key="title" value="${item.title || ''}"></div>
             </div>`;
         }
         return `<div class="item-container" data-id="${item.id}">
             <div class="item-header"><span>Lien : ${item.title}</span><button data-action="delete" class="btn btn-danger">✖</button></div>
-            <div class="form-group"><label for="link-title-${item.id}">Titre</label><input type="text" id="link-title-${item.id}" data-key="title" data-item-id="${item.id}" value="${item.title || ''}"></div>
-            <div class="form-group"><label for="link-url-${item.id}">URL</label><input type="text" id="link-url-${item.id}" data-key="url" data-item-id="${item.id}" value="${item.url || ''}"></div>
+            <div class="form-group"><label for="link-title-${item.id}">Titre</label><input type="text" id="link-title-${item.id}" data-key="title" value="${item.title || ''}"></div>
+            <div class="form-group"><label for="link-url-${item.id}">URL</label><input type="text" id="link-url-${item.id}" data-key="url" value="${item.url || ''}"></div>
             ${createFileUploadHTML('thumbnailUrl', item.thumbnailUrl, 'Miniature', item.id)}
         </div>`;
     };
@@ -242,8 +258,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="card" id="card-settings">
             <div class="card-header"><h2>Paramètres (SEO)</h2></div>
             <div class="card-body">
-                <div class="form-group"><label for="seo-title">Titre de la page</label><input type="text" id="seo-title" data-key="seo.title" value="${seo.title || ''}"></div>
-                <div class="form-group"><label for="seo-desc">Méta-description</label><input type="text" id="seo-desc" data-key="seo.description" value="${seo.description || ''}"></div>
+                <div class="form-group"><label for="seo-title">Titre</label><input type="text" id="seo-title" data-key="seo.title" value="${seo.title || ''}"></div>
+                <div class="form-group"><label for="seo-desc">Description</label><input type="text" id="seo-desc" data-key="seo.description" value="${seo.description || ''}"></div>
                 ${createFileUploadHTML('seo.faviconUrl', seo.faviconUrl, 'Favicon')}
             </div>
         </div>
@@ -258,11 +274,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const base64String = await readFileAsBase64(file);
             handleStateUpdate(key, base64String, id);
         } catch (error) {
-            alert('Erreur lors de la lecture du fichier.');
+            console.error(error);
+            showConfirmation('Erreur', 'Le fichier n\'a pas pu être lu.');
         }
     };
 
-    async function attachEventListeners() {
+    function attachEventListeners() {
         if (!editorContent) return;
         
         editorContent.addEventListener('change', e => {
@@ -281,8 +298,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 300));
 
         editorContent.addEventListener('click', async (e) => {
-            const action = e.target.closest('[data-action]')?.dataset.action;
-            if (!action) return;
+            const actionTarget = e.target.closest('[data-action]');
+            if (!actionTarget) return;
+            const action = actionTarget.dataset.action;
             e.preventDefault();
             const newState = JSON.parse(JSON.stringify(state));
             let stateChanged = true;
@@ -300,9 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 newState.links.push({ type: 'header', id: Date.now(), title: 'Nouvel En-tête' });
             } else if (action === 'add-social') {
                 newState.socials.push({ id: Date.now(), url: 'https://', network: 'website' });
-            } else {
-                stateChanged = false;
-            }
+            } else { stateChanged = false; }
 
             if (stateChanged) updateAndSave(newState);
         });
@@ -338,9 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (action === 'edit') {
             const selector = id ? `[data-id="${id}"]` : `#card-${type}`;
             const elementToFocus = document.querySelector(selector);
-            if (elementToFocus) {
-                elementToFocus.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
+            if (elementToFocus) elementToFocus.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else if (action === 'delete-context') {
             const confirmed = await showConfirmation('Êtes-vous sûr(e) ?', 'Cette action est irréversible.');
             if (!confirmed) return;
