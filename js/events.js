@@ -138,16 +138,22 @@ export function attachEventListeners() {
 
         const range = selection.getRangeAt(0);
         const rect = range.getBoundingClientRect();
-        const editorRect = editorContent.getBoundingClientRect();
+        const editorPane = document.getElementById('editor-pane');
+        const editorPaneRect = editorPane.getBoundingClientRect();
 
-        let top = rect.top - editorRect.top + editorContent.scrollTop - formatToolbar.offsetHeight;
-        if (top < editorContent.scrollTop) { 
-            top = rect.bottom - editorRect.top + editorContent.scrollTop;
+        let top = rect.top - editorPaneRect.top - formatToolbar.offsetHeight - 4; // 4px au-dessus
+        if (top < 0) { // Si hors de l'écran (en haut)
+            top = rect.bottom - editorPaneRect.top + 4; // 4px en dessous
         }
-        const left = rect.left - editorRect.left + (rect.width / 2) - (formatToolbar.offsetWidth / 2);
+        
+        let left = rect.left - editorPaneRect.left + (rect.width / 2) - (formatToolbar.offsetWidth / 2);
+        
+        // Empêcher la barre d'outils de déborder sur les côtés
+        left = Math.max(0, left);
+        left = Math.min(left, editorPaneRect.width - formatToolbar.offsetWidth);
 
         formatToolbar.style.top = `${top}px`;
-        formatToolbar.style.left = `${Math.max(0, left)}px`;
+        formatToolbar.style.left = `${left}px`;
         formatToolbar.classList.add('visible');
         logger.info('Formatting toolbar shown for selection.');
     };
