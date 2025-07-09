@@ -1,20 +1,23 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- ÉLÉMENTS DU DOM ---
     const editorContent = document.getElementById('editor-content');
     const contextMenu = document.getElementById('custom-context-menu');
     const saveStatusEl = document.getElementById('save-status');
     const previewFrame = document.getElementById('preview-frame');
 
+    // --- ÉTAT DE L'APPLICATION ---
     let state = {};
 
+    // --- CONSTANTES ---
     const API = {
         UPDATE_SECRET_KEY: 'DINGUERIEDEVOULOIRMODIF',
         GET_DATA_URL: 'https://reliable-hamster-b1e205.netlify.app/.netlify/functions/get-data',
         UPDATE_DATA_URL: 'https://reliable-hamster-b1e205.netlify.app/.netlify/functions/update-data'
     };
-    
     const FONT_OPTIONS = { "Inter": "'Inter', sans-serif", "Roboto": "'Roboto', sans-serif", "Montserrat": "'Montserrat', sans-serif", "Lato": "'Lato', sans-serif", "Playfair Display": "'Playfair Display', serif" };
     const SOCIAL_OPTIONS = { "twitter": "Twitter", "instagram": "Instagram", "facebook": "Facebook", "linkedin": "LinkedIn", "github": "GitHub", "youtube": "YouTube", "tiktok": "TikTok", "website": "Site Web" };
 
+    // --- FONCTIONS UTILITAIRES ---
     const readFileAsBase64 = (file) => new Promise((resolve, reject) => {
         if (!file) return resolve(null);
         const reader = new FileReader();
@@ -31,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     };
 
+    // --- GESTION DE L'ÉTAT ET DE LA SAUVEGARDE ---
     const saveStateToNotion = async () => {
         if (!state || !state.profile) return;
         saveStatusEl.textContent = 'Sauvegarde...';
@@ -63,11 +67,32 @@ document.addEventListener('DOMContentLoaded', () => {
         render();
         debouncedSave();
     };
+    
+    const handleStateUpdate = (key, value, id) => {
+        const newState = JSON.parse(JSON.stringify(state));
+        if (id) {
+            const list = [...(newState.links || []), ...(newState.socials || [])];
+            const item = list.find(i => i.id === id);
+            if(item) item[key] = value;
+        } else {
+            let current = newState;
+            const keyParts = key.split('.');
+            keyParts.forEach((part, index) => {
+                if (index === keyParts.length - 1) current[part] = value;
+                else current = current[part] = current[part] || {};
+            });
+        }
+        updateAndSave(newState);
+    };
 
+    // --- FONCTIONS DE RENDU (GÉNÉRATION DU HTML) ---
     const render = () => {
         if (!editorContent || !state.profile) return;
         
-        const focusedElementId = document.activeElement.id;
+        const focusedElement = document.activeElement;
+        const focusedElementId = focusedElement ? focusedElement.id : null;
+        const selectionStart = focusedElement ? focusedElement.selectionStart : null;
+        const selectionEnd = focusedElement ? focusedElement.selectionEnd : null;
         const scrollPosition = editorContent.parentElement.scrollTop;
 
         editorContent.innerHTML = `
@@ -79,11 +104,12 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         
         if (focusedElementId) {
-            const focusedElement = document.getElementById(focusedElementId);
-            if (focusedElement) {
-                focusedElement.focus();
-                const end = focusedElement.value.length;
-                focusedElement.setSelectionRange(end, end);
+            const reFocusedElement = document.getElementById(focusedElementId);
+            if (reFocusedElement) {
+                reFocusedElement.focus();
+                if(selectionStart !== null && selectionEnd !== null){
+                   reFocusedElement.setSelectionRange(selectionStart, selectionEnd);
+                }
             }
         }
         editorContent.parentElement.scrollTop = scrollPosition;
@@ -151,48 +177,39 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${createColorInputHTML('appearance.button.textColor', appearance.button.textColor, 'Texte des boutons')}
                 </div>
             </div>
-        </div>
-        `;
+        </div>`;
     };
 
     const createItemsCard = (title, items, itemRenderer, addAction, addLabel) => {
         const itemsHTML = (items || []).map(item => itemRenderer(item)).join('');
-        return `
-        <div class="card">
+        return `<div class="card">
             <div class="card-header"><h2>${title}</h2><button data-action="${addAction}" class="btn btn-secondary">${addLabel}</button></div>
             <div class="card-body">${itemsHTML.length > 0 ? itemsHTML : '<p class="empty-state">Aucun élément. Cliquez sur "Ajouter" pour commencer.</p>'}</div>
-        </div>
-        `;
+        </div>`;
     };
     
     const createSocialItemHTML = (item) => {
         const socialOpts = Object.entries(SOCIAL_OPTIONS).map(([key, name]) => `<option value="${key}" ${item.network === key ? 'selected' : ''}>${name}</option>`).join('');
-        return `
-        <div class="item-container" data-id="${item.id}">
+        return `<div class="item-container" data-id="${item.id}">
             <div class="item-header"><span>Icône : ${SOCIAL_OPTIONS[item.network] || item.network}</span><button data-action="delete" class="btn btn-danger">✖</button></div>
-            <div class="form-group"><label for="social-network-${item.id}">Réseau</label><select id="social-network-${item.id}" data-key="network">${socialOpts}</select></div>
-            <div class="form-group"><label for="social-url-${item.id}">URL ou Pseudo</label><input type="text" id="social-url-${item.id}" data-key="url" value="${item.url || ''}"></div>
-        </div>
-        `;
+            <div class="form-group"><label for="social-network-${item.id}">Réseau</label><select id="social-network-${item.id}" data-key="network" data-item-id="${item.id}">${socialOpts}</select></div>
+            <div class="form-group"><label for="social-url-${item.id}">URL ou Pseudo</label><input type="text" id="social-url-${item.id}" data-key="url" data-item-id="${item.id}" value="${item.url || ''}"></div>
+        </div>`;
     };
 
     const createLinkItemHTML = (item) => {
         if (item.type === 'header') {
-            return `
-            <div class="item-container" data-id="${item.id}">
+            return `<div class="item-container" data-id="${item.id}">
                 <div class="item-header"><span>En-tête</span><button data-action="delete" class="btn btn-danger">✖</button></div>
-                <div class="form-group"><label for="header-title-${item.id}">Texte de l'en-tête</label><input type="text" id="header-title-${item.id}" data-key="title" value="${item.title || ''}"></div>
-            </div>
-            `;
+                <div class="form-group"><label for="header-title-${item.id}">Texte de l'en-tête</label><input type="text" id="header-title-${item.id}" data-key="title" data-item-id="${item.id}" value="${item.title || ''}"></div>
+            </div>`;
         }
-        return `
-        <div class="item-container" data-id="${item.id}">
+        return `<div class="item-container" data-id="${item.id}">
             <div class="item-header"><span>Lien : ${item.title}</span><button data-action="delete" class="btn btn-danger">✖</button></div>
-            <div class="form-group"><label for="link-title-${item.id}">Titre</label><input type="text" id="link-title-${item.id}" data-key="title" value="${item.title || ''}"></div>
-            <div class="form-group"><label for="link-url-${item.id}">URL</label><input type="text" id="link-url-${item.id}" data-key="url" value="${item.url || ''}"></div>
+            <div class="form-group"><label for="link-title-${item.id}">Titre</label><input type="text" id="link-title-${item.id}" data-key="title" data-item-id="${item.id}" value="${item.title || ''}"></div>
+            <div class="form-group"><label for="link-url-${item.id}">URL</label><input type="text" id="link-url-${item.id}" data-key="url" data-item-id="${item.id}" value="${item.url || ''}"></div>
             ${createFileUploadHTML('thumbnailUrl', item.thumbnailUrl, 'Miniature', item.id)}
-        </div>
-        `;
+        </div>`;
     };
     
     const createSettingsCard = (seo) => `
@@ -206,97 +223,89 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
     `;
 
-    function handleStateUpdate(key, value, id) {
-        const newState = JSON.parse(JSON.stringify(state));
-        if (id) {
-            const list = [...(newState.links || []), ...(newState.socials || [])];
-            const item = list.find(i => i.id === id);
-            if(item) item[key] = value;
-        } else {
-            let current = newState;
-            const keyParts = key.split('.');
-            keyParts.forEach((part, index) => {
-                if (index === keyParts.length - 1) current[part] = value;
-                else current = current[part] = current[part] || {};
-            });
+    // --- GESTION DES ÉVÉNEMENTS ---
+    // ** CORRECTION : définition de la fonction handleFileUpload avant son utilisation **
+    const handleFileUploadWrapper = async (e) => {
+        const file = e.target.files[0];
+        const key = e.target.dataset.key;
+        if (!key) return;
+        const id = e.target.closest('[data-id]') ? parseInt(e.target.closest('[data-id]').dataset.id, 10) : null;
+        try {
+            const base64String = await readFileAsBase64(file);
+            handleStateUpdate(key, base64String, id);
+        } catch (error) {
+            alert('Erreur lors de la lecture du fichier.');
         }
-        updateAndSave(newState);
-    }
+    };
     
     function attachEventListeners() {
         if (!editorContent) return;
         
         editorContent.addEventListener('change', e => {
-            if (e.target.matches('.file-upload-input')) return handleFileUpload(e);
-            if (e.target.dataset.key) {
-                const key = e.target.dataset.key;
-                const value = e.target.value;
+            if (e.target.matches('.file-upload-input')) {
+                handleFileUploadWrapper(e);
+            } else if (e.target.dataset.key) {
                 const id = e.target.closest('[data-id]') ? parseInt(e.target.closest('[data-id]').dataset.id, 10) : null;
-                handleStateUpdate(key, value, id);
+                handleStateUpdate(e.target.dataset.key, e.target.value, id);
             }
         });
         
         editorContent.addEventListener('input', debounce(e => {
             const target = e.target;
-            if (!target.dataset.key || target.type === 'file' || target.type === 'color' || target.tagName === 'SELECT') return;
-            handleStateUpdate(target.dataset.key, target.value, target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null);
+            if (!target.dataset.key || target.matches('select, [type=file], [type=color]')) return;
+            const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
+            handleStateUpdate(target.dataset.key, target.value, id);
         }, 300));
 
         editorContent.addEventListener('click', e => {
-            const action = e.target.dataset.action;
-            if (action) {
-                e.preventDefault();
-                const newState = JSON.parse(JSON.stringify(state));
-                let stateChanged = true;
-                if (action === 'add-link') newState.links.push({ type: 'link', id: Date.now(), title: 'Nouveau Lien', url: 'https://' });
-                else if (action === 'add-header') newState.links.push({ type: 'header', id: Date.now(), title: 'Nouvel En-tête' });
-                else if (action === 'add-social') newState.socials.push({ id: Date.now(), url: 'https://', network: 'website' });
-                else if (action === 'delete') {
-                    const itemEl = e.target.closest('[data-id]');
-                    if (!itemEl || !window.confirm("Êtes-vous sûr(e) de vouloir supprimer cet élément ?")) return;
-                    const id = parseInt(itemEl.dataset.id, 10);
-                    newState.links = (newState.links || []).filter(item => item.id !== id);
-                    newState.socials = (newState.socials || []).filter(item => item.id !== id);
-                } else {
-                    stateChanged = false;
-                }
-                if (stateChanged) updateAndSave(newState);
-            }
+            const action = e.target.closest('[data-action]')?.dataset.action;
+            if (!action) return;
+            e.preventDefault();
+            const newState = JSON.parse(JSON.stringify(state));
+            let stateChanged = true;
+            if (action === 'add-link') newState.links.push({ type: 'link', id: Date.now(), title: 'Nouveau Lien', url: 'https://' });
+            else if (action === 'add-header') newState.links.push({ type: 'header', id: Date.now(), title: 'Nouvel En-tête' });
+            else if (action === 'add-social') newState.socials.push({ id: Date.now(), url: 'https://', network: 'website' });
+            else if (action === 'delete') {
+                const itemEl = e.target.closest('[data-id]');
+                if (!itemEl || !window.confirm("Êtes-vous sûr(e) de vouloir supprimer cet élément ?")) return;
+                const id = parseInt(itemEl.dataset.id, 10);
+                newState.links = (newState.links || []).filter(item => item.id !== id);
+                newState.socials = (newState.socials || []).filter(item => item.id !== id);
+            } else { stateChanged = false; }
+            if (stateChanged) updateAndSave(newState);
         });
         
         window.addEventListener('message', e => {
-            if (e.data.type === 'showContextMenu') {
-                showContextMenu(e.data.payload);
-            }
+            if (e.data.type === 'showContextMenu') showContextMenu(e.data.payload);
         });
 
         document.addEventListener('click', () => hideContextMenu());
+        contextMenu.addEventListener('click', e => handleContextMenuAction(e));
     }
 
     function showContextMenu({ id, x, y }) {
         contextMenu.style.top = `${y}px`;
         contextMenu.style.left = `${x}px`;
         contextMenu.style.display = 'block';
-        
-        contextMenu.innerHTML = `
-            <div class="context-menu-item" data-action="edit" data-target-id="${id}">✏️ Modifier dans l'éditeur</div>
-            <div class="context-menu-item delete" data-action="delete-context" data-target-id="${id}">🗑️ Supprimer</div>
-        `;
-        
-        contextMenu.addEventListener('click', handleContextMenuAction, { once: true });
+        contextMenu.innerHTML = `<div class="context-menu-item" data-action="edit" data-target-id="${id}">✏️ Aller à l'élément</div><div class="context-menu-item delete" data-action="delete-context" data-target-id="${id}">🗑️ Supprimer</div>`;
     }
     
+    function hideContextMenu() {
+        if (contextMenu) contextMenu.style.display = 'none';
+    }
+
     function handleContextMenuAction(e) {
         e.stopPropagation();
-        const action = e.target.dataset.action;
-        const targetId = e.target.dataset.targetId;
+        hideContextMenu();
+        const { action, targetId } = e.target.dataset;
         if (!action || !targetId) return;
         
         const [type, idStr] = targetId.split('.');
         const id = parseInt(idStr, 10);
 
         if (action === 'edit') {
-            const selector = `#card-${type}, [data-id="${id}"]`;
+            const selector = id ? `[data-id="${id}"]` : `#card-${type}`;
             const elementToFocus = document.querySelector(selector);
             if (elementToFocus) {
                 elementToFocus.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -304,16 +313,14 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (action === 'delete-context') {
             if (!window.confirm("Êtes-vous sûr(e) de vouloir supprimer cet élément ?")) return;
             const newState = JSON.parse(JSON.stringify(state));
-            newState[type] = (newState[type] || []).filter(item => item.id !== id);
-            updateAndSave(newState);
+            if (newState[type] && id) {
+                newState[type] = newState[type].filter(item => item.id !== id);
+                updateAndSave(newState);
+            }
         }
-        hideContextMenu();
     }
 
-    function hideContextMenu() {
-        if (contextMenu) contextMenu.style.display = 'none';
-    }
-
+    // --- INITIALISATION ---
     async function init() {
         if (!editorContent) return;
         editorContent.innerHTML = `<div class="empty-state">Chargement...</div>`;
@@ -333,7 +340,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     previewFrame.contentWindow.postMessage({ type: 'update', payload: state }, window.location.origin);
                 }
             });
-
         } catch (error) {
             saveStatusEl.textContent = `Erreur`;
             saveStatusEl.style.color = 'var(--danger-color)';
