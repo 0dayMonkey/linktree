@@ -62,7 +62,6 @@ export function showConfirmation(title, text) {
 export function showContextMenu({ id, x, y }) {
     if (!contextMenu || !previewFrame) return;
 
-    // --- CORRECTION CLÉ : Calcul du positionnement ---
     const iframeRect = previewFrame.getBoundingClientRect();
     const finalX = iframeRect.left + x;
     const finalY = iframeRect.top + y;
@@ -77,7 +76,6 @@ export function hideContextMenu() {
     if (contextMenu) contextMenu.style.display = 'none';
 }
 
-// --- Fonctions privées de rendu ---
 function createFileUploadHTML(key, currentSrc, label, id = '', accept = 'image/*') {
     const uniqueId = `upload-${key.replace(/\./g, '-')}-${id || 'main'}`;
     return `<div class="form-group">
@@ -145,7 +143,7 @@ function createAppearanceCard(appearance) {
 
 function createItemsCard(title, items, itemRenderer, addAction, addLabel) {
     const itemsHTML = (items || []).map(item => itemRenderer(item)).join('');
-    return `<div class="card">
+    return `<div class="card" data-list-name="${title.toLowerCase().replace(/ /g, '-')}">
         <div class="card-header"><h2>${title}</h2><button data-action="${addAction}" class="btn btn-secondary">${addLabel}</button></div>
         <div class="card-body">${itemsHTML.length > 0 ? itemsHTML : '<p class="empty-state">Aucun élément.</p>'}</div>
     </div>`;
@@ -153,7 +151,8 @@ function createItemsCard(title, items, itemRenderer, addAction, addLabel) {
 
 function createSocialItemHTML(item) {
     const socialOpts = Object.entries(SOCIAL_OPTIONS).map(([key, name]) => `<option value="${key}" ${item.network === key ? 'selected' : ''}>${name}</option>`).join('');
-    return `<div class="item-container" data-id="${item.id}">
+    // MISE À JOUR : Ajout de draggable="true"
+    return `<div class="item-container" data-id="${item.id}" draggable="true">
         <div class="item-header"><span>Icône : ${SOCIAL_OPTIONS[item.network] || item.network}</span><button data-action="delete" class="btn btn-danger">✖</button></div>
         <div class="form-group"><label for="social-network-${item.id}">Réseau</label><select id="social-network-${item.id}" data-key="network">${socialOpts}</select></div>
         <div class="form-group"><label for="social-url-${item.id}">URL ou Pseudo</label><input type="text" id="social-url-${item.id}" data-key="url" value="${item.url || ''}"></div>
@@ -161,13 +160,14 @@ function createSocialItemHTML(item) {
 }
 
 function createLinkItemHTML(item) {
+    // MISE À JOUR : Ajout de draggable="true"
     if (item.type === 'header') {
-        return `<div class="item-container" data-id="${item.id}">
+        return `<div class="item-container" data-id="${item.id}" draggable="true">
             <div class="item-header"><span>En-tête</span><button data-action="delete" class="btn btn-danger">✖</button></div>
             <div class="form-group"><label for="header-title-${item.id}">Texte</label><input type="text" id="header-title-${item.id}" data-key="title" value="${item.title || ''}"></div>
         </div>`;
     }
-    return `<div class="item-container" data-id="${item.id}">
+    return `<div class="item-container" data-id="${item.id}" draggable="true">
         <div class="item-header"><span>Lien : ${item.title}</span><button data-action="delete" class="btn btn-danger">✖</button></div>
         <div class="form-group"><label for="link-title-${item.id}">Titre</label><input type="text" id="link-title-${item.id}" data-key="title" value="${item.title || ''}"></div>
         <div class="form-group"><label for="link-url-${item.id}">URL</label><input type="text" id="link-url-${item.id}" data-key="url" value="${item.url || ''}"></div>

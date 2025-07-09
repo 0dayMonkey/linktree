@@ -46,11 +46,10 @@ async function handleContextMenuAction(e) {
         const elementToFocus = document.querySelector(selector);
         if (elementToFocus) {
             elementToFocus.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            // --- NOUVEAU : Application de l'indicateur visuel ---
             elementToFocus.classList.add('highlight-indicator');
             setTimeout(() => {
                 elementToFocus.classList.remove('highlight-indicator');
-            }, 1500); // La durée doit correspondre à l'animation CSS
+            }, 1500);
         }
     } else if (action === 'delete-context') {
         const confirmed = await showConfirmation('Êtes-vous sûr(e) ?', 'Cette action est irréversible.');
@@ -69,6 +68,7 @@ export function attachEventListeners() {
     const contextMenu = document.getElementById('custom-context-menu');
     if (!editorContent) return;
     
+    // --- Événements classiques ---
     editorContent.addEventListener('change', e => {
         if (e.target.matches('.file-upload-input')) return handleFileUpload(e);
         if (e.target.dataset.key) {
@@ -119,4 +119,88 @@ export function attachEventListeners() {
 
     document.addEventListener('click', () => hideContextMenu());
     contextMenu.addEventListener('click', e => handleContextMenuAction(e));
+
+    // --- NOUVEAU : Logique du Drag & Drop ---
+    let draggedItem = null;
+
+    editorContent.addEventListener('dragstart', e => {
+        draggedItem = e.target.closest('.item-container');
+        if (draggedItem) {
+            setTimeout(() => {
+                draggedItem.classList.add('dragging');
+            }, 0);
+        }
+    });
+
+    editorContent.addEventListener('dragend', e => {
+        if (draggedItem) {
+            draggedItem.classList.remove('dragging');
+            draggedItem = null;
+        }
+    });
+
+    editorContent.addEventListener('dragover', e => {
+        e.preventDefault();
+        const container = e.target.closest('.card-body');
+        if (!container || !draggedItem) return;
+
+        const afterElement = getDragAfterElement(container, e.clientY);
+        const currentDraggable = document.querySelector('.dragging');
+
+        // Nettoyer les indicateurs précédents
+        container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        
+        if (afterElement == null) {
+            if(container.lastElementChild !== currentDraggable) {
+                 container.lastElementChild.classList.add('drag-over-bottom'); // Ou une autre classe pour la fin
+            }
+        } else {
+            if(afterElement !== currentDraggable) {
+                afterElement.classList.add('drag-over');
+            }
+        }
+    });
+    
+    editorContent.addEventListener('drop', e => {
+        e.preventDefault();
+        const container = e.target.closest('[data-list-name]');
+        if (!container || !draggedItem) return;
+
+        // Récupérer la nouvelle position
+        const afterElement = getDragAfterElement(container.querySelector('.card-body'), e.clientY);
+        
+        // Mettre à jour l'état
+        const listName = container.dataset.listName === "liens-&-en-têtes" ? 'links' : 'socials';
+        const id = parseInt(draggedItem.dataset.id, 10);
+        
+        const currentState = JSON.parse(JSON.stringify(getState()));
+        const list = currentState[listName];
+
+        const draggedIndex = list.findIndex(item => item.id === id);
+        const [removed] = list.splice(draggedIndex, 1);
+        
+        if (afterElement == null) {
+            list.push(removed);
+        } else {
+            const dropId = parseInt(afterElement.dataset.id, 10);
+            const dropIndex = list.findIndex(item => item.id === dropId);
+            list.splice(dropIndex, 0, removed);
+        }
+
+        updateAndSave(currentState);
+    });
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.item-container:not(.dragging)')];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
 }

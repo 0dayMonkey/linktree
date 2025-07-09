@@ -16,23 +16,14 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* --- NOUVEAU : Animation de l'indicateur visuel --- */
 @keyframes highlight-fade {
-    from {
-        background-color: rgba(0, 93, 255, 0.1);
-        box-shadow: 0 0 0 2px rgba(0, 93, 255, 0.2);
-    }
-    to {
-        background-color: transparent;
-        box-shadow: 0 0 0 0 rgba(0, 93, 255, 0);
-    }
+    from { background-color: rgba(0, 93, 255, 0.1); box-shadow: 0 0 0 2px rgba(0, 93, 255, 0.2); }
+    to { background-color: transparent; box-shadow: 0 0 0 0 rgba(0, 93, 255, 0); }
 }
 
 .highlight-indicator {
     animation: highlight-fade 1.5s ease-out forwards;
 }
-/* --- FIN NOUVEAU --- */
-
 
 body {
     margin: 0;
@@ -90,9 +81,21 @@ body {
 .btn-danger { background-color: transparent; color: var(--danger-color); padding: 8px; }
 .btn-danger:hover { background-color: rgba(220, 53, 69, 0.1); }
 
-.item-container { background: #F8F9FA; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 16px; padding: 20px; }
+.item-container { background: #F8F9FA; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 16px; padding: 20px; cursor: grab; }
+.item-container:active { cursor: grabbing; }
 .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .item-header span { font-weight: 600; }
+
+/* --- NOUVEAU : Styles pour le Drag & Drop --- */
+.item-container.dragging {
+    opacity: 0.5;
+    border: 2px dashed var(--primary-color);
+}
+.drag-over {
+    padding-top: 60px; /* Espace pour déposer l'élément */
+    background-color: rgba(0, 93, 255, 0.05);
+}
+/* --- FIN NOUVEAU --- */
 
 .color-picker-wrapper { display: flex; align-items: center; gap: 10px; }
 .color-picker-wrapper input[type="text"] { flex-grow: 1; font-family: monospace; }
