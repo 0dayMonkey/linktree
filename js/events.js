@@ -130,18 +130,25 @@ export function attachEventListeners() {
             return;
         }
 
+        // --- CORRECTION CLÉ : S'assurer que la sélection est bien dans un champ éditable ---
+        const editable = selection.anchorNode.parentElement.closest('.editable-content');
+        if (!editable) {
+            formatToolbar.classList.remove('visible');
+            return;
+        }
+
         const range = selection.getRangeAt(0);
         const rect = range.getBoundingClientRect();
         const editorRect = editorContent.getBoundingClientRect();
 
         let top = rect.top - editorRect.top + editorContent.scrollTop - formatToolbar.offsetHeight - 8;
-        if (top < editorContent.scrollTop) { // If toolbar is off-screen at the top, show it below
+        if (top < editorContent.scrollTop) {
             top = rect.bottom - editorRect.top + editorContent.scrollTop + 8;
         }
         const left = rect.left - editorRect.left + (rect.width / 2) - (formatToolbar.offsetWidth / 2);
 
         formatToolbar.style.top = `${top}px`;
-        formatToolbar.style.left = `${Math.max(0, left)}px`; // Ensure it doesn't go off-screen left
+        formatToolbar.style.left = `${Math.max(0, left)}px`;
         formatToolbar.classList.add('visible');
         logger.info('Formatting toolbar shown for selection.');
     };
@@ -154,6 +161,18 @@ export function attachEventListeners() {
         const format = button.dataset.format;
         logger.info(`Applying format: ${format}`);
         document.execCommand(format, false, null);
+
+        // Mettre à jour l'état après la commande exec, car le DOM a changé
+        const selection = window.getSelection();
+        if (selection && selection.anchorNode) {
+            const editableDiv = selection.anchorNode.parentElement.closest('.editable-content');
+            if (editableDiv) {
+                const key = editableDiv.dataset.key;
+                const id = editableDiv.closest('[data-id]') ? parseInt(editableDiv.closest('[data-id]').dataset.id, 10) : null;
+                const newHtml = editableDiv.innerHTML;
+                handleStateUpdate(key, newHtml, id, { skipRender: true });
+            }
+        }
     });
 
     const debouncedInputHandler = debounce(e => {
@@ -167,9 +186,7 @@ export function attachEventListeners() {
     }, 400);
 
     editorContent.addEventListener('input', debouncedInputHandler);
-    editorContent.addEventListener('mouseup', () => setTimeout(showFormatToolbar, 1));
-    editorContent.addEventListener('keyup', () => setTimeout(showFormatToolbar, 1));
-
+    document.addEventListener('selectionchange', showFormatToolbar);
 
     editorContent.addEventListener('change', e => {
         if (e.target.matches('.file-upload-input')) return handleFileUpload(e);
@@ -242,11 +259,12 @@ export function attachEventListeners() {
             document.querySelectorAll('.select-items').forEach(item => item.classList.add('select-hide'));
             document.querySelectorAll('.select-selected').forEach(item => item.classList.remove('select-arrow-active'));
         }
-        if (!e.target.closest('.editable-content') && !e.target.closest('#inline-format-toolbar')) {
-            formatToolbar.classList.remove('visible');
+        if (!window.getSelection().toString()) {
+             formatToolbar.classList.remove('visible');
         }
         hideContextMenu();
     });
+
     contextMenu.addEventListener('click', e => handleContextMenuAction(e));
 
     let draggedItem = null;
