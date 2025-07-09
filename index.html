@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Linktree</title>
+    <title>Links</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="dynamic-style-container"></div>
+
     <div class="container">
         <header>
             <img id="profile-picture" src="" alt="Profile Picture" class="profile-picture">
@@ -36,68 +37,55 @@
 
             // 1. Render SEO & Metadata
             document.title = seo?.title || profile?.title || 'Links';
-            if (document.querySelector("meta[name='description']")) {
-                document.querySelector("meta[name='description']").content = seo?.description || '';
-            } else {
-                const meta = document.createElement('meta');
-                meta.name = 'description';
-                meta.content = seo?.description || '';
-                document.head.appendChild(meta);
+            let metaDesc = document.querySelector("meta[name='description']");
+            if (!metaDesc) {
+                metaDesc = document.createElement('meta');
+                metaDesc.name = 'description';
+                document.head.appendChild(metaDesc);
             }
-            if (document.querySelector("link[rel='icon']")) {
-                document.querySelector("link[rel='icon']").href = seo?.faviconUrl || '';
-            } else {
-                const link = document.createElement('link');
-                link.rel = 'icon';
-                link.href = seo?.faviconUrl || '';
-                document.head.appendChild(link);
+            metaDesc.content = seo?.description || '';
+            
+            let favicon = document.querySelector("link[rel='icon']");
+            if (!favicon) {
+                favicon = document.createElement('link');
+                favicon.rel = 'icon';
+                document.head.appendChild(favicon);
             }
+            favicon.href = seo?.faviconUrl || '';
 
-            // 2. Render Appearance (Dynamic Styles)
+            // 2. Render Appearance
             if (appearance) {
-                // Font
-                const fontLink = document.getElementById('dynamic-font-link');
-                if (fontLink) fontLink.remove();
-                if (appearance.fontFamily) {
-                    const newFontLink = document.createElement('link');
-                    newFontLink.id = 'dynamic-font-link';
-                    newFontLink.rel = 'stylesheet';
-                    newFontLink.href = `https://fonts.googleapis.com/css2?family=${appearance.fontFamily.replace(/"/g, "").replace(/ /g, "+")}:wght@400;600;700&display=swap`;
-                    document.head.appendChild(newFontLink);
+                let fontLink = document.getElementById('dynamic-font-link');
+                if (!fontLink) {
+                    fontLink = document.createElement('link');
+                    fontLink.id = 'dynamic-font-link';
+                    fontLink.rel = 'stylesheet';
+                    document.head.appendChild(fontLink);
                 }
+                fontLink.href = `https://fonts.googleapis.com/css2?family=${appearance.fontFamily.replace(/"/g, "").replace(/ /g, "+")}:wght@400;600;700&display=swap`;
 
-                // Background & Buttons
                 let backgroundValue;
                 switch (appearance.background.type) {
-                    case 'image':
-                        backgroundValue = `url(${appearance.background.value})`;
-                        break;
-                    case 'gradient':
-                        backgroundValue = `linear-gradient(135deg, ${appearance.background.value[0]}, ${appearance.background.value[1]})`;
-                        break;
-                    default: // solid
-                        backgroundValue = appearance.background.value;
+                    case 'image': backgroundValue = `url(${CSS.escape(appearance.background.value)})`; break;
+                    case 'gradient': backgroundValue = `linear-gradient(135deg, ${appearance.background.value[0]}, ${appearance.background.value[1]})`; break;
+                    default: backgroundValue = appearance.background.value;
                 }
-
-                const styles = `
-                    :root {
-                        --font-family: ${appearance.fontFamily || 'Inter, sans-serif'};
-                        --background: ${backgroundValue};
-                        --button-bg: ${appearance.button.backgroundColor};
-                        --button-text: ${appearance.button.textColor};
-                        --button-radius: ${appearance.button.borderRadius};
-                        --button-shadow: ${appearance.button.hasShadow ? '0 4px 12px rgba(0, 0, 0, 0.1)' : 'none'};
-                        --text-color: ${appearance.textColor};
-                    }
-                `;
+                
+                const styles = `:root {
+                    --font-family: ${appearance.fontFamily || 'Inter, sans-serif'};
+                    --background: ${backgroundValue};
+                    --button-bg: ${appearance.button.backgroundColor};
+                    --button-text: ${appearance.button.textColor};
+                    --button-radius: ${appearance.button.borderRadius};
+                    --button-shadow: ${appearance.button.hasShadow ? '0 4px 12px rgba(0, 0, 0, 0.1)' : 'none'};
+                    --text-color: ${appearance.textColor};
+                }`;
                 document.getElementById('dynamic-style-container').innerHTML = `<style>${styles}</style>`;
             }
 
-            // 3. Render Profile
+            // 3. Render Profile & Socials
             document.getElementById('profile-picture').src = profile?.pictureUrl || '';
             document.getElementById('profile-title').textContent = profile?.title || '';
-
-            // 4. Render Socials
             const socialContainer = document.getElementById('social-icons');
             socialContainer.innerHTML = '';
             socials?.forEach(social => {
@@ -110,36 +98,40 @@
                 socialContainer.appendChild(a);
             });
 
-            // 5. Render Links (with Scheduling)
+            // 4. Render Links & Headers
             const linksList = document.getElementById('links-list');
             linksList.innerHTML = '';
             const now = new Date();
             const visibleLinks = links?.filter(link => {
+                if (link.type === 'header') return true;
                 const hasStart = link.schedule?.start;
                 const hasEnd = link.schedule?.end;
-                if (!hasStart && !hasEnd) return true; // No schedule, always show
+                if (!hasStart && !hasEnd) return true;
                 const start = hasStart ? new Date(link.schedule.start) : null;
                 const end = hasEnd ? new Date(link.schedule.end) : null;
-                if (start && now < start) return false; // Not yet active
-                if (end && now > end) return false; // Expired
+                if (start && now < start) return false;
+                if (end && now > end) return false;
                 return true;
             });
 
-            visibleLinks?.forEach(link => {
+            visibleLinks?.forEach(item => {
                 const li = document.createElement('li');
-                const a = document.createElement('a');
-                a.href = link.url;
-                a.target = "_blank";
-                a.dataset.linkId = link.id;
-                
-                if (link.thumbnailUrl) {
-                    a.classList.add('has-thumbnail');
-                    a.innerHTML = `<img src="${link.thumbnailUrl}" alt="" class="link-thumbnail"><span>${link.title}</span>`;
+                if (item.type === 'header') {
+                    li.classList.add('list-header');
+                    li.textContent = item.title;
                 } else {
-                    a.textContent = link.title;
+                    const a = document.createElement('a');
+                    a.href = item.url;
+                    a.target = "_blank";
+                    a.dataset.linkId = item.id;
+                    if (item.thumbnailUrl) {
+                        a.classList.add('has-thumbnail');
+                        a.innerHTML = `<img src="${item.thumbnailUrl}" alt="" class="link-thumbnail"><span>${item.title}</span>`;
+                    } else {
+                        a.textContent = item.title;
+                    }
+                    li.appendChild(a);
                 }
-                
-                li.appendChild(a);
                 linksList.appendChild(li);
             });
         }
@@ -158,12 +150,9 @@
             }
         }
 
-        // --- INITIALIZATION ---
         window.addEventListener('message', (event) => {
             if (event.origin !== window.location.origin) return;
-            if (event.data.type === 'update') {
-                renderPage(event.data.payload);
-            }
+            if (event.data.type === 'update') renderPage(event.data.payload);
         });
 
         document.getElementById('links-list').addEventListener('click', handleLinkClick);

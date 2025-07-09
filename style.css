@@ -7,6 +7,7 @@
 body {
     font-family: var(--font-family, 'Inter', sans-serif);
     background: var(--background, #fafafa);
+    background-attachment: fixed;
     background-size: cover;
     background-position: center;
     color: var(--text-color, #121212);
@@ -89,7 +90,6 @@ header {
 .links-list li:nth-child(3) { animation-delay: 0.3s; }
 .links-list li:nth-child(4) { animation-delay: 0.4s; }
 .links-list li:nth-child(5) { animation-delay: 0.5s; }
-/* Add more if needed */
 
 
 .links-list a {
@@ -131,6 +131,16 @@ header {
     transform: scale(1.03);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
 }
+
+/* New style for Header items */
+.list-header {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text-color, #121212);
+    margin-top: 1em;
+    margin-bottom: -0.25em;
+}
+
 
 footer {
     margin-top: 40px;
