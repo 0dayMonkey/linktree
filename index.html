@@ -63,7 +63,7 @@
                     fontLink = document.createElement('link');
                     fontLink.id = 'dynamic-font-link';
                     fontLink.rel = 'stylesheet';
-                    document.head.appendChild(link);
+                    document.head.appendChild(fontLink); // ** CORRECTION : la variable est maintenant correcte **
                 }
                 
                 if (appearance.fontFamily) {
@@ -76,7 +76,6 @@
                 if (bg.type === 'image') {
                     backgroundValue = `url(${bg.value})`;
                 } else if (bg.type === 'gradient') {
-                    // NOUVEAU : Utiliser la map de dégradés
                     backgroundValue = GRADIENTS[bg.value] || bg.value; 
                 } else {
                     backgroundValue = bg.value;

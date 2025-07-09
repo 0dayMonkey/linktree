@@ -17,14 +17,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const FONT_OPTIONS = { "Inter": "'Inter', sans-serif", "Roboto": "'Roboto', sans-serif", "Montserrat": "'Montserrat', sans-serif", "Lato": "'Lato', sans-serif", "Playfair Display": "'Playfair Display', serif" };
     const SOCIAL_OPTIONS = { "twitter": "Twitter", "instagram": "Instagram", "facebook": "Facebook", "linkedin": "LinkedIn", "github": "GitHub", "youtube": "YouTube", "tiktok": "TikTok", "website": "Site Web" };
-    // NOUVEAU : Dégradés prédéfinis
     const GRADIENT_OPTIONS = {
         "sunrise": { name: "Aurore", value: "linear-gradient(135deg, #FFD3A5, #FD6585)" },
         "ocean": { name: "Océan", value: "linear-gradient(135deg, #2E3192, #1BFFFF)" },
         "dusk": { name: "Crépuscule", value: "linear-gradient(135deg, #304352, #d7d2cc)" }
     };
 
-    // --- NOUVEAU : Logique du Modal de Confirmation ---
+    // --- LOGIQUE DU MODAL ---
     const showConfirmation = (title, text) => {
         return new Promise((resolve) => {
             modalContainer.innerHTML = `
@@ -139,7 +138,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const reFocusedElement = document.getElementById(focusedElementId);
             if (reFocusedElement) {
                 reFocusedElement.focus();
-                if(selectionStart !== null && selectionEnd !== null){
+                // ** CORRECTION : Vérifier si l'élément supporte setSelectionRange **
+                if (typeof reFocusedElement.setSelectionRange === 'function') {
                    reFocusedElement.setSelectionRange(selectionStart, selectionEnd);
                 }
             }
@@ -188,7 +188,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const fontOpts = Object.entries(FONT_OPTIONS).map(([n, v]) => `<option value="${v}" style="font-family: ${v};" ${appearance.fontFamily === v ? 'selected' : ''}>${n}</option>`).join('');
         const bg = appearance.background || {};
         
-        // NOUVEAU : Logique pour les dégradés prédéfinis
         const gradientOpts = Object.entries(GRADIENT_OPTIONS).map(([key, { name, value }]) => `<option value="${key}" ${bg.value === key ? 'selected' : ''}>${name}</option>`).join('');
         
         const bgControls = () => {
@@ -328,14 +327,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.addEventListener('click', () => hideContextMenu());
-        contextMenu.addEventListener('click', e => handleContextMenuAction(e));
     }
 
     function showContextMenu({ id, x, y }) {
+        contextMenu.innerHTML = `<div class="context-menu-item" data-action="edit" data-target-id="${id}">✏️ Aller à l'élément</div><div class="context-menu-item delete" data-action="delete-context" data-target-id="${id}">🗑️ Supprimer</div>`;
         contextMenu.style.top = `${y}px`;
         contextMenu.style.left = `${x}px`;
         contextMenu.style.display = 'block';
-        contextMenu.innerHTML = `<div class="context-menu-item" data-action="edit" data-target-id="${id}">✏️ Aller à l'élément</div><div class="context-menu-item delete" data-action="delete-context" data-target-id="${id}">🗑️ Supprimer</div>`;
+        contextMenu.addEventListener('click', handleContextMenuAction, { once: true });
     }
     
     function hideContextMenu() {
