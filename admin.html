@@ -3,70 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Notion Linktree</title>
+    <title>Panneau d'Administration</title>
     <link rel="stylesheet" href="admin.css">
 </head>
 <body>
     <div class="admin-container">
         <div id="editor-pane" class="editor-pane">
             <header class="editor-header">
-                <h1>Linktree Editor</h1>
-                <p>Status: <span id="save-status">Connecting...</span></p>
+                <h1>Éditeur de Page</h1>
+                <p>Statut : <span id="save-status">Connexion...</span></p>
             </header>
-
-            <section class="editor-section">
-                <h2>Profil</h2>
-                <div class="form-group">
-                    <label for="profile-pic-upload">Photo de profil</label>
-                    <input type="file" id="profile-pic-upload" data-key="profile.pictureUrl" accept="image/*" class="file-upload-input">
+            <div id="editor-content">
                 </div>
-                <div class="form-group">
-                    <label for="profile-title">Titre du profil</label>
-                    <input type="text" id="profile-title" data-key="profile.title" placeholder="@VotreNom">
-                </div>
-            </section>
-            
-            <section class="editor-section" id="appearance-section">
-                <h2>Apparence</h2>
-            </section>
-
-            <section class="editor-section">
-                <h2>Icônes Sociales</h2>
-                <div id="socials-editor-list"></div>
-                <button data-action="add-social" class="btn btn-secondary">Ajouter une icône sociale</button>
-            </section>
-
-            <section class="editor-section">
-                <div class="links-header">
-                    <h2>Liens & En-têtes</h2>
-                    <div>
-                        <button data-action="add-header" class="btn btn-secondary">Ajouter un en-tête</button>
-                        <button data-action="add-link" class="btn btn-primary">Ajouter un nouveau lien</button>
-                    </div>
-                </div>
-                <p class="section-description">Glissez-déposez les éléments pour les réorganiser.</p>
-                <div id="links-editor-list"></div>
-            </section>
-            
-            <section class="editor-section" id="settings-section">
-                 <h2>Paramètres (SEO)</h2>
-            </section>
-
-             <footer class="editor-header">
-                <p>Les changements sont sauvegardés automatiquement.</p>
-            </footer>
-
         </div>
-
         <div class="preview-pane">
-            <div class="preview-header">
-                <h2>Aperçu en direct</h2>
-            </div>
+            <header class="preview-header">
+                <h2>Aperçu en Direct</h2>
+            </header>
             <div class="iframe-wrapper">
-                <iframe id="preview-frame" src="index.html"></iframe>
+                <iframe id="preview-frame" src="index.html" title="Aperçu en direct de la page de liens"></iframe>
             </div>
         </div>
     </div>
+    
+    <div id="custom-context-menu"></div>
 
     <script src="admin.js"></script>
 </body>

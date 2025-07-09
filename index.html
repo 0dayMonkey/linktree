@@ -11,8 +11,8 @@
 
     <div class="container">
         <header>
-            <img id="profile-picture" src="" alt="Photo de profil" class="profile-picture">
-            <h1 id="profile-title"></h1>
+            <img id="profile-picture" src="" alt="Photo de profil" class="profile-picture" data-editable-id="profile.pictureUrl">
+            <h1 id="profile-title" data-editable-id="profile.title"></h1>
             <div id="social-icons" class="social-icons"></div>
         </header>
         <main>
@@ -36,6 +36,7 @@
         };
 
         function setFavicon(url) {
+            if (!url) return;
             let link = document.querySelector("link[rel*='icon']") || document.createElement('link');
             link.type = url.includes('svg') ? 'image/svg+xml' : 'image/x-icon';
             link.rel = 'shortcut icon';
@@ -48,7 +49,7 @@
             if (!profile) return;
 
             document.title = seo?.title || profile?.title || 'Links';
-            if(seo?.faviconUrl) setFavicon(seo.faviconUrl);
+            if (seo?.faviconUrl) setFavicon(seo.faviconUrl);
 
             if (appearance) {
                 let fontLink = document.getElementById('dynamic-font-link');
@@ -90,19 +91,26 @@
             
             const socialContainer = document.getElementById('social-icons');
             socialContainer.innerHTML = '';
-            socials?.forEach(social => {
+            (socials || []).forEach(social => {
                 if (!social.url || !ICONS[social.network]) return;
-                const a = document.createElement('a'); a.href = social.url; a.target = '_blank'; a.rel="noopener noreferrer"; a.title = social.network; a.innerHTML = ICONS[social.network];
+                const a = document.createElement('a');
+                a.href = social.url;
+                a.target = '_blank';
+                a.rel = "noopener noreferrer";
+                a.title = social.network;
+                a.innerHTML = ICONS[social.network];
+                a.dataset.editableId = `socials.${social.id}`;
                 socialContainer.appendChild(a);
             });
 
             const linksList = document.getElementById('links-list');
             linksList.innerHTML = '';
-            links?.forEach(item => {
+            (links || []).forEach(item => {
                 const li = document.createElement('li');
                 if (item.type === 'header') {
                     li.classList.add('list-header');
                     li.textContent = item.title;
+                    li.dataset.editableId = `links.${item.id}`;
                 } else {
                     const a = document.createElement('a');
                     let url = item.url;
@@ -113,6 +121,7 @@
                     a.target = "_blank";
                     a.rel = "noopener noreferrer";
                     a.dataset.linkId = item.id;
+                    a.dataset.editableId = `links.${item.id}`;
                     if (item.thumbnailUrl) {
                         a.classList.add('has-thumbnail');
                         a.innerHTML = `<img src="${item.thumbnailUrl}" alt="" class="link-thumbnail"><span>${item.title}</span>`;
@@ -123,32 +132,43 @@
             });
         }
 
-        async function loadDataFromBackend() {
-            const container = document.querySelector('.container');
-            try {
-                const apiUrl = 'https://reliable-hamster-b1e205.netlify.app/.netlify/functions/get-data';
-                const response = await fetch(apiUrl);
-                if (!response.ok) throw new Error('La réponse du réseau n\'était pas bonne');
-                const data = await response.json();
-                renderPage(data);
-            } catch (error) {
-                container.innerHTML = `<p class="default-message">Impossible de charger les liens. Veuillez réessayer plus tard.</p>`;
-            }
+        function attachContextMenuListeners() {
+            document.body.addEventListener('contextmenu', e => {
+                const target = e.target.closest('[data-editable-id]');
+                if (!target) return;
+
+                e.preventDefault();
+
+                const id = target.dataset.editableId;
+                
+                window.parent.postMessage({
+                    type: 'showContextMenu',
+                    payload: {
+                        id: id,
+                        x: e.clientX,
+                        y: e.clientY
+                    }
+                }, '*');
+            });
         }
 
         const isIframe = window.self !== window.top;
         if (isIframe) {
-            window.addEventListener('message', (event) => {
-                const adminOrigin = window.location.origin;
-                if (event.origin !== adminOrigin) {
-                    return;
-                }
+            window.addEventListener('message', event => {
                 if (event.data.type === 'update') {
                     renderPage(event.data.payload);
                 }
             });
+            attachContextMenuListeners();
         } else {
-            document.addEventListener('DOMContentLoaded', loadDataFromBackend);
+            document.addEventListener('DOMContentLoaded', () => {
+                 fetch('https://reliable-hamster-b1e205.netlify.app/.netlify/functions/get-data')
+                    .then(res => res.json())
+                    .then(data => renderPage(data))
+                    .catch(err => {
+                        document.body.innerHTML = `<p class="default-message">Impossible de charger les liens.</p>`;
+                    });
+            });
         }
     </script>
 </body>
