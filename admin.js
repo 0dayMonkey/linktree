@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const contextMenu = document.getElementById('custom-context-menu');
     const saveStatusEl = document.getElementById('save-status');
     const previewFrame = document.getElementById('preview-frame');
+    const modalContainer = document.getElementById('modal-container');
 
     // --- ÉTAT DE L'APPLICATION ---
     let state = {};
@@ -16,6 +17,31 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const FONT_OPTIONS = { "Inter": "'Inter', sans-serif", "Roboto": "'Roboto', sans-serif", "Montserrat": "'Montserrat', sans-serif", "Lato": "'Lato', sans-serif", "Playfair Display": "'Playfair Display', serif" };
     const SOCIAL_OPTIONS = { "twitter": "Twitter", "instagram": "Instagram", "facebook": "Facebook", "linkedin": "LinkedIn", "github": "GitHub", "youtube": "YouTube", "tiktok": "TikTok", "website": "Site Web" };
+
+    // --- NOUVEAU : Logique du Modal de Confirmation ---
+    const showConfirmation = (title, text) => {
+        return new Promise((resolve) => {
+            modalContainer.innerHTML = `
+                <div class="modal-box">
+                    <h3 class="modal-title">${title}</h3>
+                    <p class="modal-text">${text}</p>
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" id="modal-cancel">Annuler</button>
+                        <button class="btn btn-danger-fill" id="modal-confirm">Confirmer</button>
+                    </div>
+                </div>
+            `;
+            modalContainer.classList.add('is-visible');
+
+            const closeModal = (result) => {
+                modalContainer.classList.remove('is-visible');
+                resolve(result);
+            };
+
+            document.getElementById('modal-confirm').addEventListener('click', () => closeModal(true));
+            document.getElementById('modal-cancel').addEventListener('click', () => closeModal(false));
+        });
+    };
 
     // --- FONCTIONS UTILITAIRES ---
     const readFileAsBase64 = (file) => new Promise((resolve, reject) => {
@@ -222,9 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         </div>
     `;
-
-    // --- GESTION DES ÉVÉNEMENTS ---
-    // ** CORRECTION : définition de la fonction handleFileUpload avant son utilisation **
+    
     const handleFileUploadWrapper = async (e) => {
         const file = e.target.files[0];
         const key = e.target.dataset.key;
@@ -237,14 +261,13 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Erreur lors de la lecture du fichier.');
         }
     };
-    
-    function attachEventListeners() {
+
+    async function attachEventListeners() {
         if (!editorContent) return;
         
         editorContent.addEventListener('change', e => {
-            if (e.target.matches('.file-upload-input')) {
-                handleFileUploadWrapper(e);
-            } else if (e.target.dataset.key) {
+            if (e.target.matches('.file-upload-input')) return handleFileUploadWrapper(e);
+            if (e.target.dataset.key) {
                 const id = e.target.closest('[data-id]') ? parseInt(e.target.closest('[data-id]').dataset.id, 10) : null;
                 handleStateUpdate(e.target.dataset.key, e.target.value, id);
             }
@@ -257,22 +280,30 @@ document.addEventListener('DOMContentLoaded', () => {
             handleStateUpdate(target.dataset.key, target.value, id);
         }, 300));
 
-        editorContent.addEventListener('click', e => {
+        editorContent.addEventListener('click', async (e) => {
             const action = e.target.closest('[data-action]')?.dataset.action;
             if (!action) return;
             e.preventDefault();
             const newState = JSON.parse(JSON.stringify(state));
             let stateChanged = true;
-            if (action === 'add-link') newState.links.push({ type: 'link', id: Date.now(), title: 'Nouveau Lien', url: 'https://' });
-            else if (action === 'add-header') newState.links.push({ type: 'header', id: Date.now(), title: 'Nouvel En-tête' });
-            else if (action === 'add-social') newState.socials.push({ id: Date.now(), url: 'https://', network: 'website' });
-            else if (action === 'delete') {
+
+            if (action === 'delete') {
                 const itemEl = e.target.closest('[data-id]');
-                if (!itemEl || !window.confirm("Êtes-vous sûr(e) de vouloir supprimer cet élément ?")) return;
+                const confirmed = await showConfirmation('Êtes-vous sûr(e) ?', 'Cette action est irréversible.');
+                if (!itemEl || !confirmed) return;
                 const id = parseInt(itemEl.dataset.id, 10);
                 newState.links = (newState.links || []).filter(item => item.id !== id);
                 newState.socials = (newState.socials || []).filter(item => item.id !== id);
-            } else { stateChanged = false; }
+            } else if (action === 'add-link') {
+                newState.links.push({ type: 'link', id: Date.now(), title: 'Nouveau Lien', url: 'https://' });
+            } else if (action === 'add-header') {
+                newState.links.push({ type: 'header', id: Date.now(), title: 'Nouvel En-tête' });
+            } else if (action === 'add-social') {
+                newState.socials.push({ id: Date.now(), url: 'https://', network: 'website' });
+            } else {
+                stateChanged = false;
+            }
+
             if (stateChanged) updateAndSave(newState);
         });
         
@@ -295,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (contextMenu) contextMenu.style.display = 'none';
     }
 
-    function handleContextMenuAction(e) {
+    async function handleContextMenuAction(e) {
         e.stopPropagation();
         hideContextMenu();
         const { action, targetId } = e.target.dataset;
@@ -311,16 +342,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 elementToFocus.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         } else if (action === 'delete-context') {
-            if (!window.confirm("Êtes-vous sûr(e) de vouloir supprimer cet élément ?")) return;
+            const confirmed = await showConfirmation('Êtes-vous sûr(e) ?', 'Cette action est irréversible.');
+            if (!confirmed) return;
             const newState = JSON.parse(JSON.stringify(state));
-            if (newState[type] && id) {
-                newState[type] = newState[type].filter(item => item.id !== id);
+            const listName = type;
+            if (newState[listName] && id) {
+                newState[listName] = newState[listName].filter(item => item.id !== id);
                 updateAndSave(newState);
             }
         }
     }
 
-    // --- INITIALISATION ---
     async function init() {
         if (!editorContent) return;
         editorContent.innerHTML = `<div class="empty-state">Chargement...</div>`;
