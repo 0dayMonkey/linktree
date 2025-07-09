@@ -102,23 +102,39 @@ function createColorInputHTML(key, value, label) {
 
 function createCustomSelectHTML(key, options, selectedValue, { id = null, type = 'default' } = {}) {
     let selectedDisplay = 'Sélectionner...';
-    
+
+    if (selectedValue) {
+        if (type === 'font') {
+            const font = Object.values(options).find(f => f.value === selectedValue);
+            if (font) {
+                selectedDisplay = `<span style="font-family: ${font.value};">${font.name}</span>`;
+            }
+        } else if (type === 'social') {
+            const socialName = options[selectedValue];
+            if (socialName) {
+                selectedDisplay = `<div>${ICONS[selectedValue] || ''}<span>${socialName}</span></div>`;
+            }
+        } else {
+             const option = options[selectedValue];
+             selectedDisplay = option ? (option.name || option) : selectedValue;
+        }
+    }
+
     const optionsHTML = Object.entries(options).map(([val, display]) => {
         let finalDisplay;
         let style = '';
+        const isSelected = type === 'font' ? selectedValue === display.value : selectedValue === val;
+
         if (type === 'font') {
             finalDisplay = display.name;
             style = `font-family: ${display.value};`;
-            if (selectedValue === display.value) selectedDisplay = `<span style="${style}">${finalDisplay}</span>`;
         } else if (type === 'social') {
-            finalDisplay = `<span>${display.name}</span>`;
+            finalDisplay = `<span>${display}</span>`;
             if (ICONS[val]) finalDisplay = `${ICONS[val]}${finalDisplay}`;
-            if (selectedValue === val) selectedDisplay = finalDisplay;
-        } else { // gradient, bg_type
+        } else {
              finalDisplay = display.name || display;
-             if(selectedValue === val) selectedDisplay = finalDisplay;
         }
-        return `<div data-value="${val}" style="${style}" class="${selectedValue === val ? 'same-as-selected' : ''}">${finalDisplay}</div>`;
+        return `<div data-value="${val}" style="${style}" class="${isSelected ? 'same-as-selected' : ''}">${finalDisplay}</div>`;
     }).join('');
 
     const dataIdAttr = id ? `data-id="${id}"` : '';
@@ -138,7 +154,11 @@ function createProfileCard(profile) {
             ${createFileUploadHTML('profile.pictureUrl', profile.pictureUrl, 'Photo de profil')}
             <div class="form-group">
                 <label for="profile-title">Titre du profil</label>
-                <input type="text" id="profile-title" data-key="profile.title" value="${profile.title || ''}" placeholder="@VotreNom">
+                <input type="text" id="profile-title" data-key="profile.title" value="${profile.title || ''}" placeholder="@VotreNom" class="formatted-text-input">
+            </div>
+            <div class="form-group">
+                <label for="profile-description">Description</label>
+                <textarea id="profile-description" data-key="profile.description" class="formatted-text-input" placeholder="Votre bio...">${profile.description || ''}</textarea>
             </div>
         </div>
     </div>`;
@@ -186,11 +206,10 @@ function createItemsCard(title, items, itemRenderer, addAction1, addLabel1, addA
 }
 
 function createSocialItemHTML(item) {
-    const socialOptions = Object.entries(SOCIAL_OPTIONS).reduce((acc, [key, name]) => ({ ...acc, [key]: { name } }), {});
     return `<div class="item-container" data-id="${item.id}" draggable="true">
         <div class="item-header"><span>Icône</span><button data-action="delete" class="btn btn-danger">✖</button></div>
-        <div class="form-group"><label>Réseau</label>${createCustomSelectHTML('network', socialOptions, item.network, { id: item.id, type: 'social' })}</div>
-        <div class="form-group"><label for="social-url-${item.id}">URL ou Pseudo</label><input type="text" id="social-url-${item.id}" data-key="url" value="${item.url || ''}"></div>
+        <div class="form-group"><label>Réseau</label>${createCustomSelectHTML('network', SOCIAL_OPTIONS, item.network, { id: item.id, type: 'social' })}</div>
+        <div class="form-group"><label for="social-url-${item.id}">URL</label><input type="text" id="social-url-${item.id}" data-key="url" data-id="${item.id}" value="${item.url || ''}"></div>
     </div>`;
 }
 
@@ -198,13 +217,13 @@ function createLinkItemHTML(item) {
     if (item.type === 'header') {
         return `<div class="item-container" data-id="${item.id}" draggable="true">
             <div class="item-header"><span>En-tête</span><button data-action="delete" class="btn btn-danger">✖</button></div>
-            <div class="form-group"><label for="header-title-${item.id}">Texte</label><input type="text" id="header-title-${item.id}" data-key="title" value="${item.title || ''}"></div>
+            <div class="form-group"><label for="header-title-${item.id}">Texte</label><input type="text" id="header-title-${item.id}" data-key="title" data-id="${item.id}" value="${item.title || ''}" class="formatted-text-input"></div>
         </div>`;
     }
     return `<div class="item-container" data-id="${item.id}" draggable="true">
         <div class="item-header"><span>Lien</span><button data-action="delete" class="btn btn-danger">✖</button></div>
-        <div class="form-group"><label for="link-title-${item.id}">Titre</label><input type="text" id="link-title-${item.id}" data-key="title" value="${item.title || ''}"></div>
-        <div class="form-group"><label for="link-url-${item.id}">URL</label><input type="text" id="link-url-${item.id}" data-key="url" value="${item.url || ''}"></div>
+        <div class="form-group"><label for="link-title-${item.id}">Titre</label><input type="text" id="link-title-${item.id}" data-key="title" data-id="${item.id}" value="${item.title || ''}" class="formatted-text-input"></div>
+        <div class="form-group"><label for="link-url-${item.id}">URL</label><input type="text" id="link-url-${item.id}" data-key="url" data-id="${item.id}" value="${item.url || ''}"></div>
         ${createFileUploadHTML('thumbnailUrl', item.thumbnailUrl, 'Miniature', item.id)}
     </div>`;
 }

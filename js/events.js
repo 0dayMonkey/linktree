@@ -70,19 +70,17 @@ function handleCustomSelect(e) {
     const select = e.target.closest('.custom-select');
     if (!select) return;
 
-    const selected = select.querySelector('.select-selected');
     const items = select.querySelector('.select-items');
     
-    // Close other selects
     document.querySelectorAll('.custom-select .select-items').forEach(otherItems => {
         if (otherItems !== items) {
             otherItems.classList.add('select-hide');
-            otherItems.previousElementSibling.classList.remove('select-arrow-active');
+            otherItems.closest('.custom-select').querySelector('.select-selected').classList.remove('select-arrow-active');
         }
     });
 
     items.classList.toggle('select-hide');
-    selected.classList.toggle('select-arrow-active');
+    select.querySelector('.select-selected').classList.toggle('select-arrow-active');
 }
 
 function handleSelectOption(e) {
@@ -110,7 +108,7 @@ function reorderList(list, draggedId, targetId) {
         if (targetIndex !== -1) {
             list.splice(targetIndex, 0, draggedItem);
         } else {
-             list.push(draggedItem); // Fallback if target not found
+             list.push(draggedItem);
         }
     }
     return list;
@@ -120,25 +118,80 @@ function reorderList(list, draggedId, targetId) {
 export function attachEventListeners() {
     const editorContent = document.getElementById('editor-content');
     const contextMenu = document.getElementById('custom-context-menu');
+    const formatToolbar = document.getElementById('inline-format-toolbar');
+    let currentTargetInput = null;
+
     if (!editorContent) return;
     
+    const showFormatToolbar = (target) => {
+        currentTargetInput = target;
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0 || selection.toString().trim() === '') {
+            formatToolbar.style.display = 'none';
+            return;
+        }
+        
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        const editorRect = editorContent.parentElement.getBoundingClientRect();
+
+        formatToolbar.style.display = 'flex';
+        formatToolbar.style.top = `${rect.top - editorRect.top + editorContent.parentElement.scrollTop - formatToolbar.offsetHeight - 5}px`;
+        formatToolbar.style.left = `${rect.left - editorRect.left + (rect.width / 2) - (formatToolbar.offsetWidth / 2)}px`;
+    };
+
+    editorContent.addEventListener('mouseup', (e) => {
+        if (e.target.matches('.formatted-text-input')) {
+            setTimeout(() => showFormatToolbar(e.target), 1);
+        }
+    });
+    
+    formatToolbar.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        const button = e.target.closest('button');
+        if (!button || !currentTargetInput) return;
+
+        const format = button.dataset.format;
+        const tag = { 'bold': 'b', 'italic': 'i', 'underline': 'u' }[format];
+        if (!tag) return;
+
+        const start = currentTargetInput.selectionStart;
+        const end = currentTargetInput.selectionEnd;
+        if (start === end) return;
+        
+        const value = currentTargetInput.value;
+        const selectedText = value.substring(start, end);
+        const newText = `${value.substring(0, start)}<${tag}>${selectedText}</${tag}>${value.substring(end)}`;
+        
+        const key = currentTargetInput.dataset.key;
+        const id = currentTargetInput.closest('[data-id]') ? parseInt(currentTargetInput.closest('[data-id]').dataset.id, 10) : null;
+        
+        handleStateUpdate(key, newText, id);
+        formatToolbar.style.display = 'none';
+    });
+
+
+    const handleGenericChange = (e) => {
+        const target = e.target;
+        if (!target.dataset.key) return;
+        
+        const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
+        const value = target.type === 'checkbox' ? target.checked : target.value;
+        handleStateUpdate(target.dataset.key, value, id);
+    };
+
     editorContent.addEventListener('change', e => {
         if (e.target.matches('.file-upload-input')) return handleFileUpload(e);
-        if (e.target.dataset.key) {
-            const id = e.target.closest('[data-id]') ? parseInt(e.target.closest('[data-id]').dataset.id, 10) : null;
-            handleStateUpdate(e.target.dataset.key, e.target.value, id);
-        }
+        handleGenericChange(e);
     });
     
     editorContent.addEventListener('input', debounce(e => {
         const target = e.target;
-        if (!target.dataset.key || target.matches('select, [type=file], [type=color]')) return;
-        const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
-        handleStateUpdate(target.dataset.key, target.value, id);
-    }, 300));
+        if (!target.dataset.key || target.matches('.file-upload-input, [type=color]')) return;
+        handleGenericChange(e);
+    }, 400));
 
     editorContent.addEventListener('click', async (e) => {
-        // --- Custom Select Logic ---
         if (e.target.closest('.custom-select')) {
              if (e.target.closest('[data-value]')) {
                 handleSelectOption(e);
@@ -147,7 +200,6 @@ export function attachEventListeners() {
             }
         }
 
-        // --- Action Buttons Logic ---
         const actionTarget = e.target.closest('[data-action]');
         if (!actionTarget) return;
         const action = actionTarget.dataset.action;
@@ -200,6 +252,9 @@ export function attachEventListeners() {
             document.querySelectorAll('.custom-select .select-items').forEach(item => item.classList.add('select-hide'));
             document.querySelectorAll('.select-selected').forEach(item => item.classList.remove('select-arrow-active'));
         }
+        if (!e.target.closest('#inline-format-toolbar') && !e.target.matches('.formatted-text-input')) {
+            formatToolbar.style.display = 'none';
+        }
         hideContextMenu();
     });
     contextMenu.addEventListener('click', e => handleContextMenuAction(e));
@@ -208,18 +263,12 @@ export function attachEventListeners() {
 
     editorContent.addEventListener('dragstart', e => {
         draggedItem = e.target.closest('.item-container');
-        if (draggedItem) {
-            setTimeout(() => {
-                draggedItem.classList.add('dragging');
-            }, 0);
-        }
+        if (draggedItem) setTimeout(() => { draggedItem.classList.add('dragging'); }, 0);
     });
 
     editorContent.addEventListener('dragend', e => {
-        if (draggedItem) {
-            draggedItem.classList.remove('dragging');
-            draggedItem = null;
-        }
+        if (draggedItem) draggedItem.classList.remove('dragging');
+        draggedItem = null;
     });
 
     editorContent.addEventListener('dragover', e => {
@@ -228,12 +277,8 @@ export function attachEventListeners() {
         if (!container || !draggedItem) return;
 
         const afterElement = getDragAfterElement(container, e.clientY);
-        
-        container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-        
-        if (afterElement) {
-             afterElement.classList.add('drag-over');
-        }
+        container.querySelectorAll('.item-container').forEach(el => el.classList.remove('drag-over'));
+        if (afterElement) afterElement.classList.add('drag-over');
     });
     
     editorContent.addEventListener('drop', e => {
@@ -247,22 +292,18 @@ export function attachEventListeners() {
         const listName = listNameAttr === 'liens-&-en-têtes' ? 'links' : 'socials';
         
         const draggedId = parseInt(draggedItem.dataset.id, 10);
-        
         const afterElement = getDragAfterElement(container.querySelector('.card-body'), e.clientY);
         const targetId = afterElement ? parseInt(afterElement.dataset.id, 10) : null;
         
         const currentState = JSON.parse(JSON.stringify(getState()));
         const list = currentState[listName];
         
-        const reorderedList = reorderList(list, draggedId, targetId);
-        currentState[listName] = reorderedList;
-
+        currentState[listName] = reorderList(list, draggedId, targetId);
         updateAndSave(currentState);
     });
 
     function getDragAfterElement(container, y) {
         const draggableElements = [...container.querySelectorAll('.item-container:not(.dragging)')];
-
         return draggableElements.reduce((closest, child) => {
             const box = child.getBoundingClientRect();
             const offset = y - box.top - box.height / 2;
