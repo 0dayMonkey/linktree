@@ -201,7 +201,7 @@ export function createItemsCard(title, items, itemRenderer, addAction1, addLabel
 }
 
 export function createSongItemHTML(item) {
-    return `<div class="item-container" data-id="${item.songId}" draggable="true">
+    return `<div class="item-container" data-id="${item.songId}">
         <div class="item-header">
             <div class="item-preview">
                 <img src="${item.albumArtUrl}" alt="Pochette d'album">
@@ -210,7 +210,17 @@ export function createSongItemHTML(item) {
                     <span class="item-subtitle">${item.artist}</span>
                 </div>
             </div>
-            <button data-action="delete-song" class="btn btn-danger">✖</button>
+            <div class="item-actions">
+                <button class="btn-icon" data-action="move-song-up" title="Monter">
+                    <svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path></svg>
+                </button>
+                <button data-action="delete-song" class="btn-icon btn-danger-icon" title="Supprimer">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"></path></svg>
+                </button>
+                <button class="btn-icon" data-action="move-song-down" title="Descendre">
+                    <svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"></path></svg>
+                </button>
+            </div>
         </div>
     </div>`;
 }

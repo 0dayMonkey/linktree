@@ -107,16 +107,32 @@ body {
 .btn-danger { background-color: transparent; color: var(--danger-color); padding: 8px; }
 .btn-danger:hover { background-color: rgba(220, 53, 69, 0.1); }
 
-.item-container { background: #F8F9FA; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 16px; padding: 20px; cursor: grab; }
-.item-container:active { cursor: grabbing; }
+.item-container { background: #F8F9FA; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 16px; padding: 20px; }
+.item-container[draggable="true"] { cursor: grab; }
+.item-container[draggable="true"]:active { cursor: grabbing; }
+
 .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .item-header span { font-weight: 600; }
-.item-preview { display: flex; align-items: center; gap: 12px; }
+.item-preview { display: flex; align-items: center; gap: 12px; flex-grow: 1; }
 .item-preview img { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; }
 .item-preview div { display: flex; flex-direction: column; }
 .item-title { font-weight: 600; }
 .item-subtitle { font-size: 0.9rem; color: var(--text-secondary); }
 
+.item-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.item-actions .btn-icon {
+    padding: 4px;
+}
+.btn-icon.btn-danger-icon {
+    color: var(--danger-color);
+}
+.btn-icon.btn-danger-icon:hover {
+    background-color: rgba(220, 53, 69, 0.1);
+}
 
 .item-container.dragging { opacity: 0.5; border: 2px dashed var(--primary-color); }
 .drag-over { padding-top: 60px; background-color: rgba(0, 93, 255, 0.05); }

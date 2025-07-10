@@ -111,6 +111,16 @@ export function attachEventListeners() {
                 }
                 currentState.sectionOrder = order;
 
+            } else if (action === 'move-song-up' || action === 'move-song-down') {
+                const itemEl = e.target.closest('[data-id]');
+                const songId = itemEl.dataset.id;
+                const songs = currentState.songs || [];
+                const index = songs.findIndex(s => s.songId === songId);
+                const direction = action === 'move-song-up' ? -1 : 1;
+
+                if ((direction === -1 && index > 0) || (direction === 1 && index < songs.length - 1)) {
+                    [songs[index], songs[index + direction]] = [songs[index + direction], songs[index]];
+                }
             } else if (action === 'delete-song') {
                  const itemEl = e.target.closest('[data-id]');
                  const songId = itemEl.dataset.id;
