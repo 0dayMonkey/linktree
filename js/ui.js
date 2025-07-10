@@ -2,8 +2,8 @@ import {
     createProfileCard, createAppearanceCard, createItemsCard,
     createSocialItemHTML, createLinkItemHTML, createSongItemHTML, createSettingsCard
 } from './modules/uiComponents.js';
-import { API } from '../config.js';
-import logger from '../logger.js';
+import { API } from './config.js';
+import logger from './logger.js';
 
 const editorContent = document.getElementById('editor-content');
 const contextMenu = document.getElementById('custom-context-menu');
