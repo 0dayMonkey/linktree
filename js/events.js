@@ -77,11 +77,9 @@ export function attachEventListeners() {
         if (target.matches('.editable-content')) {
             const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
             handleStateUpdate(target.dataset.key, target.innerHTML, id, { skipRender: true });
-        } else if (target.dataset.key) {
+        } else if (target.dataset.key && target.type !== 'checkbox') { // Ignorer les checkboxes ici
              const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
-             // CORRECTION: Utiliser `target.checked` pour les checkboxes, sinon `target.value`.
-             const value = target.type === 'checkbox' ? target.checked : target.value;
-             handleStateUpdate(target.dataset.key, value, id);
+             handleStateUpdate(target.dataset.key, target.value, id);
         }
     }, 400);
 
@@ -95,15 +93,24 @@ export function attachEventListeners() {
         } else if (e.target.matches('input[type=color]')) {
              const id = e.target.closest('[data-id]') ? parseInt(e.target.closest('[data-id]').dataset.id, 10) : null;
              handleStateUpdate(e.target.dataset.key, e.target.value, id);
-        } else if (e.target.matches('input[type=checkbox]')) {
-            // NOTE: La logique est maintenant gérée par le listener 'input' pour centraliser.
-            // On appelle directement le handler ici pour une réactivité immédiate sans debounce.
-            handleToggle(e);
         }
     });
 
     editorContent.addEventListener('click', async (e) => {
         const actionTarget = e.target.closest('[data-action]');
+        const customSelectTarget = e.target.closest('.custom-select');
+        const toggleSwitch = e.target.closest('.toggle-switch');
+
+        // **NOUVELLE LOGIQUE POUR LES SWITCHS**
+        // Gère le clic sur les interrupteurs de manière directe et prioritaire.
+        if (toggleSwitch) {
+            const checkbox = toggleSwitch.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                // On inverse manuellement l'état car le clic a déjà eu lieu
+                handleToggle(checkbox);
+            }
+            return; // On arrête le traitement pour ne pas interférer
+        }
         
         if (actionTarget) {
             e.preventDefault();
@@ -131,7 +138,8 @@ export function attachEventListeners() {
             }
 
             if (stateChanged) updateAndSave(currentState);
-        } else if (e.target.closest('.custom-select')) {
+
+        } else if (customSelectTarget) {
              if (e.target.closest('[data-value]')) {
                 handleSelectOption(e);
             } else {
@@ -176,8 +184,7 @@ export function attachEventListeners() {
     let draggedItem = null;
 
     editorContent.addEventListener('dragstart', e => {
-        // CORRECTION #1 : Annuler le drag si on est sur un champ de saisie
-        if (e.target.matches('input, .editable-content, a')) {
+        if (e.target.matches('input, .editable-content, a, .toggle-switch')) {
             e.preventDefault();
             return;
         }
