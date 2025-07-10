@@ -139,6 +139,12 @@ header.layout-full #profile-description {
     transition: transform 0.2s ease-in-out;
 }
 
+.social-icons svg {
+    width: 28px;
+    height: 28px;
+    fill: currentColor;
+}
+
 .social-icons a:hover {
     transform: scale(1.15);
 }
