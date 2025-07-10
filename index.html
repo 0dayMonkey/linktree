@@ -37,14 +37,14 @@
             <img id="profile-picture" src="" alt="Photo de profil" class="profile-picture" data-editable-id="profile.pictureUrl">
             <h1 id="profile-title" data-editable-id="profile.title"></h1>
             <p id="profile-description" data-editable-id="profile.description"></p>
-            <div id="social-icons" class="social-icons"></div>
-        </header>
+         </header>
         <main>
             </main>
         <footer>
             <p>Powered by Vanilla JS</p>
         </footer>
     </template>
+
 
     <script type="module">
         import { ICONS } from './js/icons.js';
@@ -76,11 +76,11 @@
             if (seo?.faviconUrl) setFavicon(seo.faviconUrl);
 
             const mainContent = pageContainer.querySelector('main');
+            const header = pageContainer.querySelector('header');
             const profileTitleEl = pageContainer.querySelector('#profile-title');
             const profileDescriptionEl = pageContainer.querySelector('#profile-description');
 
             if (appearance) {
-                const header = pageContainer.querySelector('header');
                 header.className = `layout-${appearance.pictureLayout || 'circle'}`;
 
                 let fontLink = document.getElementById('dynamic-font-link');
@@ -131,18 +131,19 @@
             profileTitleEl.innerHTML = profile?.title || '';
             profileDescriptionEl.innerHTML = profile?.description || '';
             
-            const socialContainer = pageContainer.querySelector('#social-icons');
-            if (sectionOrder && sectionOrder[0] === 'socials' && socials && socials.length > 0) {
-                socialContainer.innerHTML = socials.map(social => {
-                    if (!social.url || !ICONS[social.network]) return '';
-                    return `<a href="${social.url}" target="_blank" rel="noopener noreferrer" title="${social.network}" data-editable-id="socials.${social.id}" draggable="true">${ICONS[social.network]}</a>`;
-                }).join('');
-            } else {
-                 socialContainer.remove();
-            }
-            
-            (sectionOrder || ['socials', 'songs', 'links']).forEach(sectionKey => {
-                if (sectionKey === 'songs' && songs && songs.length > 0) {
+            const orderedSections = sectionOrder || ['socials', 'songs', 'links'];
+
+            orderedSections.forEach(sectionKey => {
+                if (sectionKey === 'socials' && socials && socials.length > 0) {
+                    const socialContainer = document.createElement('div');
+                    socialContainer.className = 'social-icons';
+                    socialContainer.innerHTML = socials.map(social => {
+                        if (!social.url || !ICONS[social.network]) return '';
+                        return `<a href="${social.url}" target="_blank" rel="noopener noreferrer" title="${social.network}" data-editable-id="socials.${social.id}" draggable="true">${ICONS[social.network]}</a>`;
+                    }).join('');
+                    mainContent.appendChild(socialContainer);
+                }
+                else if (sectionKey === 'songs' && songs && songs.length > 0) {
                     const spotifyContainer = document.createElement('div');
                     spotifyContainer.innerHTML = `
                         <h2 class="section-title">Mes sons du moment</h2>

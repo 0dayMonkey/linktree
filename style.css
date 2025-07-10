@@ -49,11 +49,16 @@ body {
     padding: 40px 0;
 }
 
-header:not(.layout-full),
+header, /* CORRECTION: le header n'est plus dans le main */
 main,
 footer {
     padding: 0 20px;
     box-sizing: border-box;
+    width: 100%;
+}
+
+main > * {
+    margin-bottom: 24px;
 }
 
 
@@ -119,19 +124,13 @@ header.layout-full #profile-description {
     padding: 0 20px;
 }
 
-header.layout-full .social-icons {
-    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
-}
-
-header.layout-full .social-icons a {
-    color: var(--text-color);
-}
-
 .social-icons {
     margin-top: 16px;
     display: flex;
     justify-content: center;
     gap: 20px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .social-icons a {
@@ -221,11 +220,9 @@ header.layout-full .social-icons a {
     box-sizing: border-box;
 }
 
-/* NOUVEAU : Styles pour le carrousel Spotify */
 .section-title {
     font-size: 1.2rem;
     font-weight: 700;
-    margin-top: 40px;
     margin-bottom: 20px;
     text-align: left;
 }
@@ -235,15 +232,17 @@ header.layout-full .social-icons a {
     overflow-x: auto;
     gap: 16px;
     padding-bottom: 16px;
-    -webkit-overflow-scrolling: touch; /* Pour un défilement fluide sur mobile */
+    margin: 0 -20px; /* Permet au carousel de toucher les bords */
+    padding: 0 20px; /* Rétablit le padding pour les éléments internes */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Pour Firefox */
 }
-/* Cacher la scrollbar du carrousel mais la garder fonctionnelle */
 .spotify-carousel::-webkit-scrollbar {
     display: none;
 }
 
 .song-card {
-    flex: 0 0 150px; /* Ne grandit pas, ne rétrécit pas, base de 150px */
+    flex: 0 0 150px;
     width: 150px;
     background-color: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
