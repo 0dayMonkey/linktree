@@ -105,7 +105,6 @@ export function renderSkeleton() {
     `;
 }
 
-// NOUVEAU : Modale de recherche Spotify
 export function showSpotifySearch(onAddSong) {
     modalContainer.innerHTML = `
         <div class="modal-box spotify-modal">
