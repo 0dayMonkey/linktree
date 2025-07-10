@@ -71,14 +71,18 @@ export function attachEventListeners() {
         }
     });
 
-    // CORRIGÉ : Ce gestionnaire ne s'occupe que des entrées de texte continues.
     const debouncedInputHandler = debounce(e => {
         const target = e.target;
+        
+        // CORRECTION DÉFINITIVE : Ignorer complètement les checkboxes dans ce handler.
+        if (target.matches('input[type="checkbox"]')) {
+            return;
+        }
         
         if (target.matches('.editable-content')) {
             const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
             handleStateUpdate(target.dataset.key, target.innerHTML, id, { skipRender: true });
-        } else if (target.matches('input[type="text"]')) {
+        } else if (target.dataset.key) {
              const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
              handleStateUpdate(target.dataset.key, target.value, id);
         }
@@ -89,7 +93,6 @@ export function attachEventListeners() {
     document.addEventListener('selectionchange', showFormatToolbar);
     editorContent.addEventListener('touchend', () => setTimeout(showFormatToolbar, 100));
 
-    // Ce gestionnaire gère les changements de valeur discrets (clics, sélections).
     editorContent.addEventListener('change', e => {
         const target = e.target;
         if (target.matches('.file-upload-input')) {
@@ -98,6 +101,7 @@ export function attachEventListeners() {
              const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
              handleStateUpdate(target.dataset.key, target.value, id);
         } else if (target.matches('input[type="checkbox"]')) {
+            // Seul ce bloc gère maintenant les checkboxes, ce qui est correct.
             handleToggle(e);
         }
     });
