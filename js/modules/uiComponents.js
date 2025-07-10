@@ -7,6 +7,8 @@ function createStyleSection(title, type, appearance) {
     const style = appearance[type];
     const borderRadiusValue = parseInt(style.borderRadius, 10) || 0;
     const borderWidthValue = parseInt(style.borderWidth, 10) || 0;
+    const shadowIntensityValue = style.shadowIntensity || 10;
+    const shadowTypeOptions = { none: 'Aucune', soft: 'Légère', strong: 'Marquée' };
 
     return `
         <div class="style-section">
@@ -15,21 +17,37 @@ function createStyleSection(title, type, appearance) {
                 ${createColorInputHTML(`appearance.${type}.backgroundColor`, style.backgroundColor, 'Couleur de fond')}
                 ${createColorInputHTML(`appearance.${type}.textColor`, style.textColor, 'Couleur du texte')}
             </div>
+            
+            <h5>Bordure</h5>
             <div class="form-group">
-                <label>Rayon de la bordure</label>
+                <label>Rayon</label>
                 <div class="slider-group">
                     <input type="range" min="0" max="50" step="1" data-key="appearance.${type}.borderRadius" value="${borderRadiusValue}" class="slider-input">
                     <span class="slider-value">${borderRadiusValue}px</span>
                 </div>
             </div>
             <div class="form-group">
-                <label>Épaisseur de la bordure</label>
+                <label>Épaisseur</label>
                 <div class="number-group">
                      <input type="number" min="0" max="20" step="1" data-key="appearance.${type}.borderWidth" value="${borderWidthValue}" class="number-input">
                      <span>px</span>
                 </div>
             </div>
             ${createColorInputHTML(`appearance.${type}.borderColor`, style.borderColor, 'Couleur de la bordure')}
+
+            <h5>Ombre</h5>
+            <div class="form-group">
+                <label>Style d'ombre</label>
+                ${createCustomSelectHTML(`appearance.${type}.shadowType`, shadowTypeOptions, style.shadowType)}
+            </div>
+            <div class="form-group">
+                <label>Intensité</label>
+                <div class="slider-group">
+                    <input type="range" min="0" max="100" step="1" data-key="appearance.${type}.shadowIntensity" value="${shadowIntensityValue}" class="slider-input">
+                    <span class="slider-value">${shadowIntensityValue}%</span>
+                </div>
+            </div>
+            ${createColorInputHTML(`appearance.${type}.shadowColor`, style.shadowColor, "Couleur de l'ombre")}
         </div>
     `;
 }
@@ -83,7 +101,7 @@ export function createCustomSelectHTML(key, options, selectedValue, { id = null,
         }
         else {
              const option = options[selectedValue];
-             selectedDisplay = option ? (option.name || option) : selectedValue;
+             selectedDisplay = option.name || option || selectedValue;
         }
     }
 
