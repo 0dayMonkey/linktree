@@ -2,14 +2,6 @@ import { updateAndSave, getState, handleStateUpdate } from '../state.js';
 import { showConfirmation, hideContextMenu } from '../ui.js';
 import logger from '../logger.js';
 
-const readFileAsBase64 = (file) => new Promise((resolve, reject) => {
-    if (!file) return resolve(null);
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = error => reject(error);
-    reader.readAsDataURL(file);
-});
-
 export const debounce = (func, delay) => {
     let timeoutId;
     return (...args) => {
@@ -18,33 +10,41 @@ export const debounce = (func, delay) => {
     };
 };
 
+// MODIFIÉ : Envoi direct à Cloudinary
 export const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     const key = e.target.dataset.key;
     if (!key || !file) return;
-    
-    logger.info(`Uploading file for ${key}. Original size: ${(file.size / 1024).toFixed(2)} KB`);
 
-    // CORRECTION : Paramètres de compression beaucoup plus stricts pour éviter l'erreur 413
-    const options = {
-        maxSizeMB: 0.15, // Réduction drastique de la taille maximale
-        maxWidthOrHeight: 1024, // Réduction de la résolution maximale
-        useWebWorker: true,
-        exifOrientation: true,
-        stripExif: true
-    };
+    logger.info(`Uploading file for ${key} to Cloudinary...`);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    // Le nom de votre upload preset doit être ici
+    formData.append('upload_preset', 'linktree_uploads'); // Mettez le nom de votre preset ici
 
     try {
-        const compressedFile = await imageCompression(file, options);
-        logger.info(`Compressed file size: ${(compressedFile.size / 1024).toFixed(2)} KB`);
+        // Cette URL doit contenir votre "Cloud Name"
+        const response = await fetch('https://api.cloudinary.com/v1_1/VOTRE_CLOUD_NAME/image/upload', { // Mettez votre Cloud Name ici
+            method: 'POST',
+            body: formData,
+        });
 
-        const base64String = await readFileAsBase64(compressedFile);
+        if (!response.ok) {
+            throw new Error('Cloudinary upload failed');
+        }
+
+        const data = await response.json();
+        const imageUrl = data.secure_url; // On récupère l'URL sécurisée
+        logger.info(`File uploaded to Cloudinary: ${imageUrl}`);
+        
         const id = e.target.closest('[data-id]') ? parseInt(e.target.closest('[data-id]').dataset.id, 10) : null;
-        handleStateUpdate(key, base64String, id);
+        // On met à jour l'état avec la nouvelle URL de l'image
+        handleStateUpdate(key, imageUrl, id);
 
     } catch (error) {
-        logger.error('File compression or upload failed', error);
-        showConfirmation('Erreur', `La compression ou le téléversement du fichier a échoué : ${error.message}`);
+        logger.error('Cloudinary upload failed', error);
+        showConfirmation('Erreur', `Le téléversement du fichier sur Cloudinary a échoué : ${error.message}`);
     }
 };
 
