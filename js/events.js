@@ -153,16 +153,32 @@ export function attachEventListeners() {
 
         const range = selection.getRangeAt(0);
         const rect = range.getBoundingClientRect();
-        const editorRect = editorContent.getBoundingClientRect();
-
-        let top = rect.top - editorRect.top + editorContent.scrollTop - formatToolbar.offsetHeight;
-        if (top < editorContent.scrollTop) {
-            top = rect.bottom - editorRect.top + editorContent.scrollTop;
+        
+        if (rect.width === 0 && rect.height === 0) {
+            formatToolbar.classList.remove('visible');
+            return;
         }
-        const left = rect.left - editorRect.left + (rect.width / 2) - (formatToolbar.offsetWidth / 2);
+        
+        const toolbarHeight = formatToolbar.offsetHeight;
+        const toolbarWidth = formatToolbar.offsetWidth;
+
+        // Positionne la barre d'outils au-dessus de la sélection
+        let top = rect.top + window.scrollY - toolbarHeight - 8;
+        
+        // Si elle sort de l'écran par le haut, la positionne en dessous
+        if (top < window.scrollY) {
+            top = rect.bottom + window.scrollY + 8;
+        }
+
+        // Centre horizontalement par rapport à la sélection
+        let left = rect.left + window.scrollX + (rect.width / 2) - (toolbarWidth / 2);
+
+        // S'assure qu'elle ne sort pas de l'écran sur les côtés
+        left = Math.max(8, left);
+        left = Math.min(left, window.innerWidth - toolbarWidth - 8);
 
         formatToolbar.style.top = `${top}px`;
-        formatToolbar.style.left = `${Math.max(0, left)}px`;
+        formatToolbar.style.left = `${left}px`;
         formatToolbar.classList.add('visible');
     };
     
@@ -278,7 +294,8 @@ export function attachEventListeners() {
             document.querySelectorAll('.select-items').forEach(item => item.classList.add('select-hide'));
             document.querySelectorAll('.select-selected').forEach(item => item.classList.remove('select-arrow-active'));
         }
-        if (!window.getSelection().toString()) {
+        // Cache la barre d'outils si on clique en dehors d'une sélection
+        if (window.getSelection && window.getSelection().isCollapsed) {
              formatToolbar.classList.remove('visible');
         }
         hideContextMenu();
