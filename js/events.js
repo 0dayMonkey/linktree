@@ -220,8 +220,12 @@ export function attachEventListeners() {
     let draggedItem = null;
 
     function onDragStart(target) {
-        if (!target || target.matches('input, a, button, .editable-content')) return;
-        draggedItem = target.closest('.item-container');
+        // CORRECTION : Ignorer le démarrage du drag si la cible est un élément interactif
+        if (!target || target.closest('input, a, button, .editable-content, .custom-select')) {
+            return;
+        }
+        
+        draggedItem = target.closest('.item-container[draggable="true"]');
         if (draggedItem) {
             setTimeout(() => {
                 if(draggedItem) draggedItem.classList.add('dragging');
