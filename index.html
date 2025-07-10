@@ -40,9 +40,7 @@
             <div id="social-icons" class="social-icons"></div>
         </header>
         <main>
-            <div id="spotify-carousel-container"></div>
-            <ul id="links-list" class="links-list"></ul>
-        </main>
+            </main>
         <footer>
             <p>Powered by Vanilla JS</p>
         </footer>
@@ -76,17 +74,19 @@
             document.getElementById('apple-touch-icon').href = url;
         }
 
+        // CORRECTION : La fonction utilise maintenant sectionOrder pour rendre la page
         function renderPage(data) {
             pageContainer.innerHTML = '';
             const content = document.getElementById('content-template').content.cloneNode(true);
             pageContainer.appendChild(content);
 
-            const { seo, appearance, profile, socials, links, songs } = data || {};
+            const { seo, appearance, profile, socials, links, songs, sectionOrder } = data || {};
             if (!profile) return;
 
             document.title = seo?.title || profile?.title || 'Links';
             if (seo?.faviconUrl) setFavicon(seo.faviconUrl);
 
+            const mainContent = pageContainer.querySelector('main');
             const profileTitleEl = pageContainer.querySelector('#profile-title');
             const profileDescriptionEl = pageContainer.querySelector('#profile-description');
 
@@ -142,66 +142,61 @@
             profileTitleEl.innerHTML = profile?.title || '';
             profileDescriptionEl.innerHTML = profile?.description || '';
             
+            // On ne rend les icônes sociales que si la section 'socials' est la première
             const socialContainer = pageContainer.querySelector('#social-icons');
-            socialContainer.innerHTML = '';
-            (socials || []).forEach(social => {
-                if (!social.url || !ICONS[social.network]) return;
-                const a = document.createElement('a');
-                a.href = social.url;
-                a.target = '_blank';
-                a.rel = "noopener noreferrer";
-                a.title = social.network;
-                a.innerHTML = ICONS[social.network];
-                a.dataset.editableId = `socials.${social.id}`;
-                a.draggable = true;
-                socialContainer.appendChild(a);
-            });
-            
-            // Rendu du carrousel Spotify
-            const spotifyContainer = pageContainer.querySelector('#spotify-carousel-container');
-            if (songs && songs.length > 0) {
-                spotifyContainer.innerHTML = `
-                    <h2 class="section-title">Mes sons du moment</h2>
-                    <div class="spotify-carousel">
-                        ${songs.map(song => `
-                            <a href="${song.spotifyUrl}" target="_blank" class="song-card" data-editable-id="songs.${song.songId}">
-                                <img src="${song.albumArtUrl}" alt="Pochette de ${song.title}">
-                                <div class="song-title">${song.title}</div>
-                                <div class="song-artist">${song.artist}</div>
-                            </a>
-                        `).join('')}
-                    </div>
-                `;
+            if (sectionOrder && sectionOrder[0] === 'socials') {
+                socialContainer.innerHTML = (socials || []).map(social => {
+                    if (!social.url || !ICONS[social.network]) return '';
+                    return `<a href="${social.url}" target="_blank" rel="noopener noreferrer" title="${social.network}" data-editable-id="socials.${social.id}" draggable="true">${ICONS[social.network]}</a>`;
+                }).join('');
+            } else {
+                 socialContainer.remove();
             }
+            
 
-
-            const linksList = pageContainer.querySelector('#links-list');
-            linksList.innerHTML = '';
-            (links || []).forEach(item => {
-                const li = document.createElement('li');
-                li.dataset.editableId = `links.${item.id}`;
-                li.draggable = true;
-
-                if (item.type === 'header') {
-                    li.classList.add('list-header');
-                    li.innerHTML = `<span>${item.title}</span>`;
-                } else {
-                    const a = document.createElement('a');
-                    let url = item.url;
-                    if (url && !/^(https?:\/\/|mailto:)/i.test(url)) {
-                        url = '//' + url;
-                    }
-                    a.href = url;
-                    a.target = "_blank";
-                    a.rel = "noopener noreferrer";
-                    
-                    if (item.thumbnailUrl) {
-                        a.classList.add('has-thumbnail');
-                        a.innerHTML = `<img src="${item.thumbnailUrl}" alt="" class="link-thumbnail"><span>${item.title}</span>`;
-                    } else { a.innerHTML = item.title; }
-                    li.appendChild(a);
+            // Rendu des sections dans l'ordre défini
+            (sectionOrder || ['socials', 'songs', 'links']).forEach(sectionKey => {
+                if (sectionKey === 'songs' && songs && songs.length > 0) {
+                    const spotifyContainer = document.createElement('div');
+                    spotifyContainer.innerHTML = `
+                        <h2 class="section-title">Mes sons du moment</h2>
+                        <div class="spotify-carousel">
+                            ${songs.map(song => `
+                                <a href="${song.spotifyUrl}" target="_blank" class="song-card" data-editable-id="songs.${song.songId}">
+                                    <img src="${song.albumArtUrl}" alt="Pochette de ${song.title}">
+                                    <div class="song-title">${song.title}</div>
+                                    <div class="song-artist">${song.artist}</div>
+                                </a>
+                            `).join('')}
+                        </div>
+                    `;
+                    mainContent.appendChild(spotifyContainer);
+                } else if (sectionKey === 'links' && links && links.length > 0) {
+                    const linksList = document.createElement('ul');
+                    linksList.className = 'links-list';
+                    linksList.innerHTML = (links || []).map(item => {
+                        let li = `<li data-editable-id="links.${item.id}" draggable="true">`;
+                        if (item.type === 'header') {
+                            li = `<li class="list-header" data-editable-id="links.${item.id}" draggable="true"><span>${item.title}</span>`;
+                        } else {
+                            let url = item.url;
+                            if (url && !/^(https?:\/\/|mailto:)/i.test(url)) {
+                                url = '//' + url;
+                            }
+                            let a = `<a href="${url}" target="_blank" rel="noopener noreferrer"`;
+                            if (item.thumbnailUrl) {
+                                a += ` class="has-thumbnail"><img src="${item.thumbnailUrl}" alt="" class="link-thumbnail"><span>${item.title}</span>`;
+                            } else {
+                                a += `>${item.title}`;
+                            }
+                            a += '</a>';
+                            li += a;
+                        }
+                        li += '</li>';
+                        return li;
+                    }).join('');
+                    mainContent.appendChild(linksList);
                 }
-                linksList.appendChild(li);
             });
         }
 
