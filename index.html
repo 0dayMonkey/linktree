@@ -132,13 +132,11 @@
                     --link-text: ${appearance.link.textColor};
                     --link-radius: ${appearance.link.borderRadius};
                     --link-border: ${appearance.link.borderWidth} solid ${appearance.link.borderColor};
-                    --link-shadow: ${appearance.link.hasShadow ? '0 4px 12px rgba(0, 0, 0, 0.1)' : 'none'};
                     
                     --header-bg: ${appearance.header.backgroundColor};
                     --header-text: ${appearance.header.textColor};
                     --header-radius: ${appearance.header.borderRadius};
                     --header-border: ${appearance.header.borderWidth} solid ${appearance.header.borderColor};
-                    --header-shadow: ${appearance.header.hasShadow ? '0 4px 12px rgba(0, 0, 0, 0.1)' : 'none'};
                 }`;
                 document.getElementById('dynamic-style-container').innerHTML = `<style>${styles}</style>`;
 

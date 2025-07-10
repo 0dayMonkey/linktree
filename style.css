@@ -142,7 +142,7 @@ header.layout-full .social-icons a {
     font-weight: 600;
     border-radius: var(--link-radius, '8px');
     border: var(--link-border, 'none');
-    box-shadow: var(--link-shadow, '0 4px 12px rgba(0, 0, 0, 0.1)');
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     position: relative;
     text-align: center;
@@ -177,7 +177,6 @@ header.layout-full .social-icons a {
     background-color: var(--header-bg, transparent);
     border: var(--header-border, none);
     border-radius: var(--header-radius, 0);
-    box-shadow: var(--header-shadow, none);
     padding: 12px 20px;
     margin: 4px 0;
     text-align: center;

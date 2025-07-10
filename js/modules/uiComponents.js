@@ -1,18 +1,6 @@
 import { FONT_OPTIONS, SOCIAL_OPTIONS, GRADIENT_OPTIONS } from '../config.js';
 import { ICONS } from '../icons.js';
 
-function createToggleSwitch(key, isChecked, label) {
-    const uniqueId = `toggle-${key.replace(/\./g, '-')}`;
-    return `
-        <div class="form-group-inline">
-            <label for="${uniqueId}">${label}</label>
-            <div class="toggle-switch">
-                <input type="checkbox" id="${uniqueId}" data-key="${key}" ${isChecked ? 'checked' : ''}>
-                <span class="slider"></span>
-            </div>
-        </div>`;
-}
-
 function createStyleSection(title, type, appearance) {
     const style = appearance[type]; // 'link' or 'header'
     return `
@@ -33,7 +21,6 @@ function createStyleSection(title, type, appearance) {
                 </div>
             </div>
             ${createColorInputHTML(`appearance.${type}.borderColor`, style.borderColor, 'Couleur de la bordure')}
-            ${createToggleSwitch(`appearance.${type}.hasShadow`, style.hasShadow, 'Afficher une ombre')}
         </div>
     `;
 }

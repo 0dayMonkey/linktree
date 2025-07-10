@@ -99,16 +99,7 @@ export function attachEventListeners() {
     editorContent.addEventListener('click', async (e) => {
         const actionTarget = e.target.closest('[data-action]');
         const customSelectTarget = e.target.closest('.custom-select');
-        const toggleSwitch = e.target.closest('.toggle-switch');
 
-        if (toggleSwitch) {
-            const checkbox = toggleSwitch.querySelector('input[type="checkbox"]');
-            if (checkbox) {
-                handleStateUpdate(checkbox.dataset.key, checkbox.checked);
-            }
-            return;
-        }
-        
         if (actionTarget) {
             e.preventDefault();
             const action = actionTarget.dataset.action;
@@ -181,7 +172,7 @@ export function attachEventListeners() {
     let draggedItem = null;
 
     editorContent.addEventListener('dragstart', e => {
-        if (e.target.matches('input, .editable-content, a, .toggle-switch')) {
+        if (e.target.matches('input, .editable-content, a')) {
             e.preventDefault();
             return;
         }
