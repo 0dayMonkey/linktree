@@ -66,15 +66,18 @@ export function attachEventListeners() {
         const target = e.target;
         if (target.matches('input[type="file"]')) return;
         
-        let value = target.value;
         const key = target.dataset.key;
-
         if (!key) return;
 
+        let value;
         if (target.matches('.editable-content')) {
             value = target.innerHTML;
-        } else if (target.matches('input[type="range"]') || target.matches('input[type="number"]')) {
+        } else if (key.includes('borderRadius') || key.includes('borderWidth')) {
             value = `${target.value}px`;
+        } else if (key.includes('shadowIntensity')) {
+            value = parseInt(target.value, 10);
+        } else {
+            value = target.value;
         }
 
         const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
@@ -84,10 +87,14 @@ export function attachEventListeners() {
 
     editorContent.addEventListener('input', e => {
         const target = e.target;
-        
-        if (target.matches('input[type="range"]')) {
+        const key = target.dataset.key;
+
+        if (target.matches('input[type="range"]') && key) {
             const valueDisplay = target.nextElementSibling;
-            if (valueDisplay) valueDisplay.textContent = `${target.value}px`;
+            if (valueDisplay) {
+                const unit = key.includes('shadowIntensity') ? '%' : 'px';
+                valueDisplay.textContent = `${target.value}${unit}`;
+            }
         }
         
         debouncedInputHandler(e);

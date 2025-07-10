@@ -101,7 +101,7 @@ export function createCustomSelectHTML(key, options, selectedValue, { id = null,
         }
         else {
              const option = options[selectedValue];
-             selectedDisplay = option.name || option || selectedValue;
+             selectedDisplay = (option && option.name) || option || selectedValue;
         }
     }
 
