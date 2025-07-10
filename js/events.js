@@ -65,16 +65,34 @@ export function attachEventListeners() {
     const debouncedInputHandler = debounce(e => {
         const target = e.target;
         if (target.matches('input[type="file"]')) return;
+        
+        let value = target.value;
+        const key = target.dataset.key;
+
+        if (!key) return;
+
         if (target.matches('.editable-content')) {
-            const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
-            handleStateUpdate(target.dataset.key, target.innerHTML, id, { skipRender: true });
-        } else if (target.dataset.key) {
-             const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
-             handleStateUpdate(target.dataset.key, target.value, id);
+            value = target.innerHTML;
+        } else if (target.matches('input[type="range"]') || target.matches('input[type="number"]')) {
+            value = `${target.value}px`;
         }
+
+        const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
+        handleStateUpdate(key, value, id, { skipRender: target.matches('input[type="range"]') });
+
     }, 400);
 
-    editorContent.addEventListener('input', debouncedInputHandler);
+    editorContent.addEventListener('input', e => {
+        const target = e.target;
+        
+        if (target.matches('input[type="range"]')) {
+            const valueDisplay = target.nextElementSibling;
+            if (valueDisplay) valueDisplay.textContent = `${target.value}px`;
+        }
+        
+        debouncedInputHandler(e);
+    });
+
     document.addEventListener('selectionchange', showFormatToolbar);
 
     editorContent.addEventListener('change', e => {

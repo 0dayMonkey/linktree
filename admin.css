@@ -97,6 +97,14 @@ body {
 .form-group input[type="text"]:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(0, 93, 255, 0.15); }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
+.slider-group, .number-group { display: flex; align-items: center; gap: 12px; }
+.slider-input { flex-grow: 1; -webkit-appearance: none; background-color: #e9ecef; height: 4px; border-radius: 2px; outline: none; transition: background 0.3s; cursor: pointer;}
+.slider-input::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; background-color: var(--primary-color); border-radius: 50%; cursor: pointer; transition: background-color 0.2s; }
+.slider-input::-moz-range-thumb { width: 18px; height: 18px; background-color: var(--primary-color); border-radius: 50%; cursor: pointer; border: none; transition: background-color 0.2s; }
+.slider-value { font-size: 0.9rem; font-weight: 500; background-color: #f8f9fa; padding: 4px 8px; border-radius: 4px; color: var(--text-secondary); min-width: 40px; text-align: center;}
+.number-input { width: 80px; padding: 10px 12px; border: 1px solid #CED4DA; border-radius: 6px; font-size: 1rem; box-sizing: border-box; background-color: var(--pane-bg); transition: border-color 0.2s, box-shadow 0.2s; }
+.number-group span { font-size: 0.9rem; color: var(--text-secondary); }
+
 .btn { padding: 10px 16px; border: 1px solid transparent; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .btn-primary { background-color: var(--primary-color); color: white; }
 .btn-primary:hover { background-color: var(--primary-color-dark); }

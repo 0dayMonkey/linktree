@@ -5,6 +5,9 @@ import { ICONS } from '../icons.js';
 
 function createStyleSection(title, type, appearance) {
     const style = appearance[type];
+    const borderRadiusValue = parseInt(style.borderRadius, 10) || 0;
+    const borderWidthValue = parseInt(style.borderWidth, 10) || 0;
+
     return `
         <div class="style-section">
             <h4>${title}</h4>
@@ -12,14 +15,18 @@ function createStyleSection(title, type, appearance) {
                 ${createColorInputHTML(`appearance.${type}.backgroundColor`, style.backgroundColor, 'Couleur de fond')}
                 ${createColorInputHTML(`appearance.${type}.textColor`, style.textColor, 'Couleur du texte')}
             </div>
-            <div class="form-grid">
-                 <div class="form-group">
-                    <label>Rayon de la bordure</label>
-                    <input type="text" data-key="appearance.${type}.borderRadius" value="${style.borderRadius || '0px'}" placeholder="ex: 8px">
+            <div class="form-group">
+                <label>Rayon de la bordure</label>
+                <div class="slider-group">
+                    <input type="range" min="0" max="50" step="1" data-key="appearance.${type}.borderRadius" value="${borderRadiusValue}" class="slider-input">
+                    <span class="slider-value">${borderRadiusValue}px</span>
                 </div>
-                 <div class="form-group">
-                    <label>Épaisseur de la bordure</label>
-                    <input type="text" data-key="appearance.${type}.borderWidth" value="${style.borderWidth || '0px'}" placeholder="ex: 2px">
+            </div>
+            <div class="form-group">
+                <label>Épaisseur de la bordure</label>
+                <div class="number-group">
+                     <input type="number" min="0" max="20" step="1" data-key="appearance.${type}.borderWidth" value="${borderWidthValue}" class="number-input">
+                     <span>px</span>
                 </div>
             </div>
             ${createColorInputHTML(`appearance.${type}.borderColor`, style.borderColor, 'Couleur de la bordure')}
