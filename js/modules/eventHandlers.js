@@ -131,8 +131,10 @@ export function reorderList(list, draggedId, targetId) {
     return list;
 }
 
-export function handleToggle(e) {
-    const key = e.target.dataset.key;
-    const isChecked = e.target.checked;
+// CORRECTION : La fonction attend maintenant l'élément DOM (la checkbox) directement.
+export function handleToggle(checkboxElement) {
+    if (!checkboxElement) return;
+    const key = checkboxElement.dataset.key;
+    const isChecked = checkboxElement.checked;
     handleStateUpdate(key, isChecked);
 }
