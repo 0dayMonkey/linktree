@@ -68,6 +68,14 @@ body {
 .card { background: var(--pane-bg); border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 24px; box-shadow: var(--shadow-sm); }
 .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
 .card-header h2 { font-size: 1.1rem; font-weight: 600; margin: 0; }
+/* NOUVEAU : Styles pour la poignée de drag-and-drop des sections */
+.grab-handle {
+    cursor: grab;
+}
+.draggable-section.dragging {
+    opacity: 0.7;
+    border: 2px dashed var(--primary-color);
+}
 .card-body { padding: 20px; }
 .card-body h4 { font-size: 1rem; font-weight: 600; margin-top: 0; margin-bottom: 16px; color: var(--text-primary); }
 
@@ -101,7 +109,6 @@ body {
 .item-container:active { cursor: grabbing; }
 .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .item-header span { font-weight: 600; }
-/* NOUVEAU : Styles pour l'aperçu des chansons */
 .item-preview { display: flex; align-items: center; gap: 12px; }
 .item-preview img { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; }
 .item-preview div { display: flex; flex-direction: column; }
@@ -146,7 +153,6 @@ body {
 .modal-text { font-size: 0.95rem; color: var(--text-secondary); margin: 0 0 24px 0; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
 
-/* NOUVEAU : Styles pour la modale Spotify */
 .spotify-modal { max-width: 500px; }
 .spotify-search-results { max-height: 300px; overflow-y: auto; margin-top: 16px; border-top: 1px solid var(--border-color); }
 .spotify-result-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid var(--border-color); }

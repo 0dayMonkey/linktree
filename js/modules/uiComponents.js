@@ -169,19 +169,21 @@ export function createAppearanceCard(appearance) {
     </div>`;
 }
 
+// MODIFIÉ : Ajout du data-section-name pour le drag-and-drop des sections
 export function createItemsCard(title, items, itemRenderer, addAction1, addLabel1, addAction2, addLabel2) {
     const itemsHTML = (items || []).map(item => itemRenderer(item)).join('');
     const buttons = `
         <button data-action="${addAction1}" class="btn btn-secondary">${addLabel1}</button>
         ${addAction2 ? `<button data-action="${addAction2}" class="btn btn-secondary">${addLabel2}</button>` : ''}
     `;
-    return `<div class="card" data-list-name="${title.toLowerCase().replace(/ /g, '-')}">
-        <div class="card-header"><h2>${title}</h2><div style="display:flex; gap: 8px;">${buttons}</div></div>
+    const sectionName = title.toLowerCase().includes('social') ? 'socials' : title.toLowerCase().includes('spotify') ? 'songs' : 'links';
+
+    return `<div class="card draggable-section" draggable="true" data-section-name="${sectionName}">
+        <div class="card-header grab-handle"><h2>${title}</h2><div style="display:flex; gap: 8px;">${buttons}</div></div>
         <div class="card-body">${itemsHTML.length > 0 ? itemsHTML : '<p class="empty-state">Aucun élément.</p>'}</div>
     </div>`;
 }
 
-// NOUVEAU : Fonction pour créer une carte de chanson dans l'admin
 export function createSongItemHTML(item) {
     return `<div class="item-container" data-id="${item.songId}" draggable="true">
         <div class="item-header">
@@ -227,13 +229,12 @@ export function createLinkItemHTML(item) {
 }
 
 export function createSettingsCard(seo) {
-    const faviconAccept = "image/x-icon,image/png,image/svg+xml,image/vnd.microsoft.icon";
     return `<div class="card" id="card-settings">
         <div class="card-header"><h2>Paramètres (SEO)</h2></div>
         <div class="card-body">
             <div class="form-group"><label for="seo-title">Titre</label><input type="text" id="seo-title" data-key="seo.title" value="${seo.title || ''}"></div>
             <div class="form-group"><label for="seo-desc">Description</label><input type="text" id="seo-desc" data-key="seo.description" value="${seo.description || ''}"></div>
-            ${createFileUploadHTML('seo.faviconUrl', seo.faviconUrl, 'Favicon', '', faviconAccept)}
+            ${createFileUploadHTML('seo.faviconUrl', seo.faviconUrl, 'Favicon', '', "image/x-icon,image/png,image/svg+xml,image/vnd.microsoft.icon")}
         </div>
     </div>`;
 }

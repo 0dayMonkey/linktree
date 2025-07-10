@@ -42,13 +42,23 @@ export function render(state) {
 
     const scrollPosition = editorContent.scrollTop;
 
+    // NOUVEAU : Crée un objet de cartes pour les rendre dans l'ordre défini
+    const cards = {
+        profile: createProfileCard(state.profile, state.appearance),
+        appearance: createAppearanceCard(state.appearance),
+        socials: createItemsCard('Icônes Sociales', state.socials || [], createSocialItemHTML, 'add-social', 'Ajouter une icône'),
+        songs: createItemsCard('Chansons Spotify', state.songs || [], createSongItemHTML, 'add-song', 'Ajouter une chanson'),
+        links: createItemsCard('Liens & En-têtes', state.links || [], createLinkItemHTML, 'add-link', 'Ajouter un lien', 'add-header', 'Ajouter un en-tête'),
+        settings: createSettingsCard(state.seo)
+    };
+
+    // Le rendu se fait maintenant en fonction de l'ordre des sections
+    const sectionOrder = state.sectionOrder || ['socials', 'songs', 'links'];
     editorContent.innerHTML = `
-        ${createProfileCard(state.profile, state.appearance)}
-        ${createAppearanceCard(state.appearance)}
-        ${createItemsCard('Icônes Sociales', state.socials || [], createSocialItemHTML, 'add-social', 'Ajouter une icône')}
-        ${createItemsCard('Chansons Spotify', state.songs || [], createSongItemHTML, 'add-song', 'Ajouter une chanson')}
-        ${createItemsCard('Liens & En-têtes', state.links || [], createLinkItemHTML, 'add-link', 'Ajouter un lien', 'add-header', 'Ajouter un en-tête')}
-        ${createSettingsCard(state.seo)}
+        ${cards.profile}
+        ${cards.appearance}
+        ${sectionOrder.map(key => cards[key]).join('')}
+        ${cards.settings}
     `;
     
     if (selectionInfo && selectionInfo.elementId) {

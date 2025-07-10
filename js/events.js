@@ -127,7 +127,6 @@ export function attachEventListeners() {
                 showSpotifySearch((newSong) => {
                     const currentState = JSON.parse(JSON.stringify(getState()));
                     if (!currentState.songs) currentState.songs = [];
-                    // Vérifier que la chanson n'existe pas déjà
                     if (currentState.songs.some(s => s.songId === newSong.songId)) {
                         showConfirmation('Erreur', 'Cette chanson est déjà dans votre liste.');
                         return;
@@ -173,7 +172,7 @@ export function attachEventListeners() {
             const list = currentState[listName];
 
             if(list) {
-                const reorderedList = reorderList(list, parseInt(dId), tId ? parseInt(tId) : null);
+                const reorderedList = reorderList(list, dId, tId, listName === 'songs' ? 'songId' : 'id');
                 currentState[listName] = reorderedList;
                 updateAndSave(currentState);
             }
@@ -194,56 +193,101 @@ export function attachEventListeners() {
     contextMenu.addEventListener('click', e => handleContextMenuAction(e));
 
     let draggedItem = null;
+    let dragType = null; // 'item' ou 'section'
 
     editorContent.addEventListener('dragstart', e => {
         if (e.target.matches('input, .editable-content, a')) {
             e.preventDefault();
             return;
         }
-        draggedItem = e.target.closest('.item-container');
-        if (draggedItem) setTimeout(() => { draggedItem.classList.add('dragging'); }, 0);
+        
+        const section = e.target.closest('.draggable-section');
+        const item = e.target.closest('.item-container');
+
+        if (section && e.target.classList.contains('grab-handle')) {
+            draggedItem = section;
+            dragType = 'section';
+        } else if (item) {
+            draggedItem = item;
+            dragType = 'item';
+        } else if (section) {
+            // Permet de drag la section même si on n'est pas sur la poignée
+            draggedItem = section;
+            dragType = 'section';
+        }
+
+        if (draggedItem) {
+            setTimeout(() => { draggedItem.classList.add('dragging'); }, 0);
+        }
     });
 
     editorContent.addEventListener('dragend', e => {
         if (draggedItem) draggedItem.classList.remove('dragging');
         draggedItem = null;
+        dragType = null;
     });
 
     editorContent.addEventListener('dragover', e => {
         e.preventDefault();
-        const container = e.target.closest('.card-body');
-        if (!container || !draggedItem) return;
+        if (!draggedItem) return;
 
-        const afterElement = getDragAfterElement(container, e.clientY);
-        container.querySelectorAll('.item-container').forEach(el => el.classList.remove('drag-over'));
-        if (afterElement) afterElement.classList.add('drag-over');
+        if (dragType === 'item') {
+            const container = e.target.closest('.card-body');
+            if (!container) return;
+            const afterElement = getDragAfterElement(container, e.clientY, '.item-container');
+            container.querySelectorAll('.item-container').forEach(el => el.classList.remove('drag-over'));
+            if (afterElement) afterElement.classList.add('drag-over');
+        } else if (dragType === 'section') {
+            const container = editorContent;
+            const afterElement = getDragAfterElement(container, e.clientY, '.draggable-section');
+            container.querySelectorAll('.draggable-section').forEach(el => el.classList.remove('drag-over'));
+            if (afterElement) afterElement.classList.add('drag-over');
+        }
     });
     
     editorContent.addEventListener('drop', e => {
         e.preventDefault();
-        const container = e.target.closest('[data-list-name]');
-        if (!container || !draggedItem) return;
-        
-        container.querySelector('.card-body').querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-        
-        const listNameAttr = container.dataset.listName;
-        const listName = listNameAttr === 'liens-&-en-têtes' ? 'links' : 
-                         listNameAttr === 'icônes-sociales' ? 'socials' : 'songs';
-        
-        const draggedId = draggedItem.dataset.id;
-        const afterElement = getDragAfterElement(container.querySelector('.card-body'), e.clientY);
-        const targetId = afterElement ? afterElement.dataset.id : null;
-        
-        logger.info(`Reordering in editor: item ${draggedId} moved before ${targetId} in ${listName}`);
-        const currentState = JSON.parse(JSON.stringify(getState()));
-        const list = currentState[listName];
-        
-        currentState[listName] = reorderList(list, draggedId, targetId, listName === 'songs' ? 'songId' : 'id');
-        updateAndSave(currentState);
+        if (!draggedItem) return;
+
+        if (dragType === 'item') {
+            const container = e.target.closest('.card[data-section-name]');
+            if (!container) return;
+            
+            container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+            
+            const listName = container.dataset.sectionName;
+            const idKey = listName === 'songs' ? 'songId' : 'id';
+            
+            const draggedId = draggedItem.dataset.id;
+            const afterElement = getDragAfterElement(container.querySelector('.card-body'), e.clientY, '.item-container');
+            const targetId = afterElement ? afterElement.dataset.id : null;
+            
+            logger.info(`Reordering in list '${listName}': item ${draggedId} moved before ${targetId}`);
+            const currentState = JSON.parse(JSON.stringify(getState()));
+            const list = currentState[listName];
+            
+            currentState[listName] = reorderList(list, draggedId, targetId, idKey);
+            updateAndSave(currentState);
+
+        } else if (dragType === 'section') {
+            editorContent.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+            
+            const draggedId = draggedItem.dataset.sectionName;
+            const afterElement = getDragAfterElement(editorContent, e.clientY, '.draggable-section');
+            const targetId = afterElement ? afterElement.dataset.sectionName : null;
+            
+            logger.info(`Reordering sections: section ${draggedId} moved before ${targetId}`);
+            const currentState = JSON.parse(JSON.stringify(getState()));
+            
+            const order = currentState.sectionOrder || ['socials', 'songs', 'links'];
+            const reordered = reorderList(order, draggedId, targetId);
+            currentState.sectionOrder = reordered;
+            updateAndSave(currentState);
+        }
     });
 
-    function getDragAfterElement(container, y) {
-        const draggableElements = [...container.querySelectorAll('.item-container:not(.dragging)')];
+    function getDragAfterElement(container, y, selector) {
+        const draggableElements = [...container.querySelectorAll(`${selector}:not(.dragging)`)];
         return draggableElements.reduce((closest, child) => {
             const box = child.getBoundingClientRect();
             const offset = y - box.top - box.height / 2;
