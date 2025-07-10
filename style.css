@@ -134,7 +134,7 @@ header.layout-full #profile-description {
 }
 
 .social-icons a {
-    color: var(--text-color, #121212);
+    color: var(--social-icon-color, var(--text-color, #121212));
     text-decoration: none;
     transition: transform 0.2s ease-in-out;
 }

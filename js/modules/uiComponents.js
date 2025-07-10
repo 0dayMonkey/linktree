@@ -159,6 +159,7 @@ export function createAppearanceCard(appearance) {
                 ${createColorInputHTML('appearance.descriptionColor', appearance.descriptionColor, 'Couleur de la Description')}
             </div>
             ${createColorInputHTML('appearance.textColor', appearance.textColor, 'Couleur du texte général')}
+            ${createColorInputHTML('appearance.socialIconsColor', appearance.socialIconsColor, 'Couleur des icônes sociales')}
             <div class="form-group"><label>Type de fond</label>${createCustomSelectHTML('appearance.background.type', bgTypeOptions, bg.type, { type: 'bg_type'})}</div>
             <div id="background-controls">${bgControls()}</div>
             <hr style="border:none; border-top:1px solid var(--border-color); margin: 24px 0;">
