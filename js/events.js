@@ -3,7 +3,7 @@ import { showConfirmation, showContextMenu, hideContextMenu } from './ui.js';
 import logger from './logger.js';
 import { 
     debounce, handleFileUpload, handleContextMenuAction, 
-    handleCustomSelect, handleSelectOption, reorderList 
+    handleCustomSelect, handleSelectOption, reorderList, handleToggle
 } from './modules/eventHandlers.js';
 
 export function attachEventListeners() {
@@ -73,7 +73,9 @@ export function attachEventListeners() {
 
     const debouncedInputHandler = debounce(e => {
         const target = e.target;
-        if (target.matches('input[type=file]')) return;
+        if (target.matches('input[type=file]') || target.matches('input[type=checkbox]')) {
+            return;
+        }
         
         if (target.matches('.editable-content')) {
             const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
@@ -94,6 +96,8 @@ export function attachEventListeners() {
         } else if (e.target.matches('input[type=color]')) {
              const id = e.target.closest('[data-id]') ? parseInt(e.target.closest('[data-id]').dataset.id, 10) : null;
              handleStateUpdate(e.target.dataset.key, e.target.value, id);
+        } else if (e.target.matches('input[type=checkbox]')) {
+            handleToggle(e);
         }
     });
 

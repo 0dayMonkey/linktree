@@ -35,7 +35,6 @@ body {
      animation: fadeIn 0.8s ease-out forwards;
 }
 
-
 header {
     margin-bottom: 20px;
     display: flex;
@@ -48,7 +47,6 @@ header {
     transition: all 0.3s ease-in-out;
 }
 
-/* --- Layout: Cercle (Défaut) --- */
 header.layout-circle .profile-picture {
     width: 96px;
     height: 96px;
@@ -58,8 +56,6 @@ header.layout-circle .profile-picture {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-
-/* --- Layout: Pleine largeur --- */
 header.layout-full {
     padding-top: 250px;
     margin-top: -40px;
@@ -93,9 +89,8 @@ header.layout-full .social-icons {
 }
 
 header.layout-full .social-icons a {
-    color: var(--text-color); /* Utilise la couleur générale, qui peut être surchargée */
+    color: var(--text-color);
 }
-
 
 .social-icons {
     margin-top: 16px;
@@ -127,7 +122,6 @@ header.layout-full .social-icons a {
     animation: fadeIn 0.5s ease-out forwards;
 }
 
-/* Staggered animation for list items */
 .links-list li:nth-child(1) { animation-delay: 0.1s; }
 .links-list li:nth-child(2) { animation-delay: 0.2s; }
 .links-list li:nth-child(3) { animation-delay: 0.3s; }
@@ -141,13 +135,14 @@ header.layout-full .social-icons a {
     justify-content: center;
     gap: 15px;
     padding: 16px 20px;
-    background-color: var(--button-bg, #ffffff);
-    color: var(--button-text, #121212);
+    background-color: var(--link-bg, #ffffff);
+    color: var(--link-text, #121212);
     text-decoration: none;
     font-size: 1rem;
     font-weight: 600;
-    border-radius: var(--button-radius, '8px');
-    box-shadow: var(--button-shadow, '0 4px 12px rgba(0, 0, 0, 0.1)');
+    border-radius: var(--link-radius, '8px');
+    border: var(--link-border, 'none');
+    box-shadow: var(--link-shadow, '0 4px 12px rgba(0, 0, 0, 0.1)');
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     position: relative;
     text-align: center;
@@ -175,15 +170,21 @@ header.layout-full .social-icons a {
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
 }
 
-/* New style for Header items */
 .list-header {
     font-weight: 700;
     font-size: 1.1rem;
-    color: var(--text-color, #121212);
-    margin-top: 1em;
-    margin-bottom: -0.25em;
+    color: var(--header-text, var(--text-color, #121212));
+    background-color: var(--header-bg, transparent);
+    border: var(--header-border, none);
+    border-radius: var(--header-radius, 0);
+    box-shadow: var(--header-shadow, none);
+    padding: 12px 20px;
+    margin: 4px 0;
+    text-align: center;
+    display: inline-block;
+    width: 100%;
+    box-sizing: border-box;
 }
-
 
 footer {
     margin-top: 40px;
@@ -202,8 +203,6 @@ footer {
     text-decoration: none;
 }
 
-
-/* --- Skeleton Loader --- */
 @keyframes shimmer {
     0% { background-position: -468px 0; }
     100% { background-position: 468px 0; }

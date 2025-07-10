@@ -130,3 +130,9 @@ export function reorderList(list, draggedId, targetId) {
     }
     return list;
 }
+
+export function handleToggle(e) {
+    const key = e.target.dataset.key;
+    const isChecked = e.target.checked;
+    handleStateUpdate(key, isChecked);
+}

@@ -1,6 +1,43 @@
 import { FONT_OPTIONS, SOCIAL_OPTIONS, GRADIENT_OPTIONS } from '../config.js';
 import { ICONS } from '../icons.js';
 
+function createToggleSwitch(key, isChecked, label) {
+    const uniqueId = `toggle-${key.replace(/\./g, '-')}`;
+    return `
+        <div class="form-group-inline">
+            <label for="${uniqueId}">${label}</label>
+            <div class="toggle-switch">
+                <input type="checkbox" id="${uniqueId}" data-key="${key}" ${isChecked ? 'checked' : ''}>
+                <span class="slider"></span>
+            </div>
+        </div>`;
+}
+
+function createStyleSection(title, type, appearance) {
+    const style = appearance[type]; // 'link' or 'header'
+    return `
+        <div class="style-section">
+            <h4>${title}</h4>
+            <div class="form-grid">
+                ${createColorInputHTML(`appearance.${type}.backgroundColor`, style.backgroundColor, 'Couleur de fond')}
+                ${createColorInputHTML(`appearance.${type}.textColor`, style.textColor, 'Couleur du texte')}
+            </div>
+            <div class="form-grid">
+                 <div class="form-group">
+                    <label>Rayon de la bordure</label>
+                    <input type="text" data-key="appearance.${type}.borderRadius" value="${style.borderRadius || '0px'}" placeholder="ex: 8px">
+                </div>
+                 <div class="form-group">
+                    <label>Épaisseur de la bordure</label>
+                    <input type="text" data-key="appearance.${type}.borderWidth" value="${style.borderWidth || '0px'}" placeholder="ex: 2px">
+                </div>
+            </div>
+            ${createColorInputHTML(`appearance.${type}.borderColor`, style.borderColor, 'Couleur de la bordure')}
+            ${createToggleSwitch(`appearance.${type}.hasShadow`, style.hasShadow, 'Afficher une ombre')}
+        </div>
+    `;
+}
+
 export function createFileUploadHTML(key, currentSrc, label, id = '', accept = 'image/*') {
     const uniqueId = `upload-${key.replace(/\./g, '-')}-${id || 'main'}`;
     const closestId = id ? `data-id="${id}"` : '';
@@ -58,9 +95,9 @@ export function createCustomSelectHTML(key, options, selectedValue, { id = null,
         let valueAttr = val;
         
         if (type === 'font') {
-            finalDisplay = val; // The key is the font name
+            finalDisplay = val;
             style = `font-family: '${val}', sans-serif;`;
-            valueAttr = display; // The value is the font-family string
+            valueAttr = display;
         } else if (type === 'social') {
             finalDisplay = `<span>${display}</span>`;
             if (ICONS[val]) finalDisplay = `${ICONS[val]}${finalDisplay}`;
@@ -124,6 +161,7 @@ export function createAppearanceCard(appearance) {
     return `<div class="card" id="card-appearance">
         <div class="card-header"><h2>Apparence</h2></div>
         <div class="card-body">
+            <h4>Style Global</h4>
             <div class="form-group"><label>Police</label>${createCustomSelectHTML('appearance.fontFamily', FONT_OPTIONS, appearance.fontFamily, { type: 'font' })}</div>
              <div class="form-grid">
                 ${createColorInputHTML('appearance.titleColor', appearance.titleColor, 'Couleur du Titre')}
@@ -133,10 +171,9 @@ export function createAppearanceCard(appearance) {
             <div class="form-group"><label>Type de fond</label>${createCustomSelectHTML('appearance.background.type', bgTypeOptions, bg.type, { type: 'bg_type'})}</div>
             <div id="background-controls">${bgControls()}</div>
             <hr style="border:none; border-top:1px solid var(--border-color); margin: 24px 0;">
-            <div class="form-grid">
-                ${createColorInputHTML('appearance.button.backgroundColor', appearance.button.backgroundColor, 'Fond des boutons')}
-                ${createColorInputHTML('appearance.button.textColor', appearance.button.textColor, 'Texte des boutons')}
-            </div>
+            ${createStyleSection('Style des Liens', 'link', appearance)}
+            <hr style="border:none; border-top:1px solid var(--border-color); margin: 24px 0;">
+            ${createStyleSection('Style des En-têtes', 'header', appearance)}
         </div>
     </div>`;
 }
