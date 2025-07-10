@@ -1,9 +1,15 @@
 // js/config.js
 
 export const API = {
+    // IMPORTANT : Mettez à jour avec votre clé secrète si vous la changez
     UPDATE_SECRET_KEY: 'DINGUERIEDEVOULOIRMODIF',
     GET_DATA_URL: 'https://reliable-hamster-b1e205.netlify.app/.netlify/functions/get-data',
     UPDATE_DATA_URL: 'https://reliable-hamster-b1e205.netlify.app/.netlify/functions/update-data'
+};
+
+export const CLOUDINARY = {
+    CLOUD_NAME: 'dq0wspmgw', 
+    UPLOAD_PRESET: 'linktree_uploads' 
 };
 
 export const FONT_OPTIONS = {

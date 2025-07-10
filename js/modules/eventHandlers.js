@@ -1,6 +1,7 @@
 import { updateAndSave, getState, handleStateUpdate } from '../state.js';
 import { showConfirmation, hideContextMenu } from '../ui.js';
 import logger from '../logger.js';
+import { CLOUDINARY } from '../config.js'; // Importer la configuration
 
 export const debounce = (func, delay) => {
     let timeoutId;
@@ -10,7 +11,7 @@ export const debounce = (func, delay) => {
     };
 };
 
-// MODIFIÉ : Envoi direct à Cloudinary
+// MODIFIÉ : Utilise la configuration centralisée
 export const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     const key = e.target.dataset.key;
@@ -20,26 +21,25 @@ export const handleFileUpload = async (e) => {
 
     const formData = new FormData();
     formData.append('file', file);
-    // Le nom de votre upload preset doit être ici
-    formData.append('upload_preset', 'linktree_uploads'); // Mettez le nom de votre preset ici
+    formData.append('upload_preset', CLOUDINARY.UPLOAD_PRESET); 
 
     try {
-        // Cette URL doit contenir votre "Cloud Name"
-        const response = await fetch('https://api.cloudinary.com/v1_1/VOTRE_CLOUD_NAME/image/upload', { // Mettez votre Cloud Name ici
+        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY.CLOUD_NAME}/image/upload`;
+        const response = await fetch(url, {
             method: 'POST',
             body: formData,
         });
 
         if (!response.ok) {
-            throw new Error('Cloudinary upload failed');
+            const errorData = await response.json();
+            throw new Error(errorData.error.message || 'Cloudinary upload failed');
         }
 
         const data = await response.json();
-        const imageUrl = data.secure_url; // On récupère l'URL sécurisée
+        const imageUrl = data.secure_url;
         logger.info(`File uploaded to Cloudinary: ${imageUrl}`);
         
         const id = e.target.closest('[data-id]') ? parseInt(e.target.closest('[data-id]').dataset.id, 10) : null;
-        // On met à jour l'état avec la nouvelle URL de l'image
         handleStateUpdate(key, imageUrl, id);
 
     } catch (error) {
