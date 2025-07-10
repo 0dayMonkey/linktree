@@ -169,7 +169,6 @@ export function createAppearanceCard(appearance) {
     </div>`;
 }
 
-// MODIFIÉ : Ajout du data-section-name pour le drag-and-drop des sections
 export function createItemsCard(title, items, itemRenderer, addAction1, addLabel1, addAction2, addLabel2) {
     const itemsHTML = (items || []).map(item => itemRenderer(item)).join('');
     const buttons = `
@@ -178,8 +177,15 @@ export function createItemsCard(title, items, itemRenderer, addAction1, addLabel
     `;
     const sectionName = title.toLowerCase().includes('social') ? 'socials' : title.toLowerCase().includes('spotify') ? 'songs' : 'links';
 
+    // NOUVEAU : Ajout de l'icône de déplacement
     return `<div class="card draggable-section" draggable="true" data-section-name="${sectionName}">
-        <div class="card-header grab-handle"><h2>${title}</h2><div style="display:flex; gap: 8px;">${buttons}</div></div>
+        <div class="card-header grab-handle">
+            <div class="card-header-title">
+                <span class="grab-indicator"></span>
+                <h2>${title}</h2>
+            </div>
+            <div class="card-header-actions">${buttons}</div>
+        </div>
         <div class="card-body">${itemsHTML.length > 0 ? itemsHTML : '<p class="empty-state">Aucun élément.</p>'}</div>
     </div>`;
 }
