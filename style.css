@@ -76,6 +76,7 @@ header {
 
 #profile-title {
     font-size: clamp(1.75rem, 5vw, 2.25rem);
+    font-weight: normal; /* CORRECTION: Retrait du gras par défaut */
 }
 #profile-description {
     font-size: clamp(1rem, 4vw, 1.1rem);
@@ -180,7 +181,7 @@ header.layout-full #profile-description {
     color: var(--link-text, #121212);
     text-decoration: none;
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: normal; /* CORRECTION: Retrait du gras par défaut */
     border-radius: var(--link-radius, '8px');
     border: var(--link-border, 'none');
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -212,7 +213,7 @@ header.layout-full #profile-description {
 }
 
 .list-header {
-    font-weight: 700;
+    font-weight: normal; /* CORRECTION: Retrait du gras par défaut */
     font-size: 1.1rem;
     color: var(--header-text, var(--text-color, #121212));
     background-color: var(--header-bg, transparent);
