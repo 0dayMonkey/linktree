@@ -3,7 +3,7 @@ import { showConfirmation, showContextMenu, hideContextMenu } from './ui.js';
 import logger from './logger.js';
 import { 
     debounce, handleFileUpload, handleContextMenuAction, 
-    handleCustomSelect, handleSelectOption, reorderList, handleToggle 
+    handleCustomSelect, handleSelectOption, reorderList 
 } from './modules/eventHandlers.js';
 
 export function attachEventListeners() {
@@ -77,7 +77,7 @@ export function attachEventListeners() {
         if (target.matches('.editable-content')) {
             const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
             handleStateUpdate(target.dataset.key, target.innerHTML, id, { skipRender: true });
-        } else if (target.dataset.key && target.type !== 'checkbox') { // Ignorer les checkboxes ici
+        } else if (target.dataset.key) {
              const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
              handleStateUpdate(target.dataset.key, target.value, id);
         }
@@ -101,15 +101,12 @@ export function attachEventListeners() {
         const customSelectTarget = e.target.closest('.custom-select');
         const toggleSwitch = e.target.closest('.toggle-switch');
 
-        // **NOUVELLE LOGIQUE POUR LES SWITCHS**
-        // Gère le clic sur les interrupteurs de manière directe et prioritaire.
         if (toggleSwitch) {
             const checkbox = toggleSwitch.querySelector('input[type="checkbox"]');
             if (checkbox) {
-                // On inverse manuellement l'état car le clic a déjà eu lieu
-                handleToggle(checkbox);
+                handleStateUpdate(checkbox.dataset.key, checkbox.checked);
             }
-            return; // On arrête le traitement pour ne pas interférer
+            return;
         }
         
         if (actionTarget) {
