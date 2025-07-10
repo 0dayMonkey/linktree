@@ -42,23 +42,18 @@ export function render(state) {
 
     const scrollPosition = editorContent.scrollTop;
 
-    // NOUVEAU : Crée un objet de cartes pour les rendre dans l'ordre défini
+    const sectionOrder = state.sectionOrder || ['socials', 'songs', 'links'];
     const cards = {
-        profile: createProfileCard(state.profile, state.appearance),
-        appearance: createAppearanceCard(state.appearance),
-        socials: createItemsCard('Icônes Sociales', state.socials || [], createSocialItemHTML, 'add-social', 'Ajouter une icône'),
-        songs: createItemsCard('Chansons Spotify', state.songs || [], createSongItemHTML, 'add-song', 'Ajouter une chanson'),
-        links: createItemsCard('Liens & En-têtes', state.links || [], createLinkItemHTML, 'add-link', 'Ajouter un lien', 'add-header', 'Ajouter un en-tête'),
-        settings: createSettingsCard(state.seo)
+        socials: createItemsCard('Icônes Sociales', state.socials || [], createSocialItemHTML, 'add-social', 'Ajouter une icône', null, null, sectionOrder.indexOf('socials') === 0, sectionOrder.indexOf('socials') === sectionOrder.length - 1),
+        songs: createItemsCard('Chansons Spotify', state.songs || [], createSongItemHTML, 'add-song', 'Ajouter une chanson', null, null, sectionOrder.indexOf('songs') === 0, sectionOrder.indexOf('songs') === sectionOrder.length - 1),
+        links: createItemsCard('Liens & En-têtes', state.links || [], createLinkItemHTML, 'add-link', 'Ajouter un lien', 'add-header', 'Ajouter un en-tête', sectionOrder.indexOf('links') === 0, sectionOrder.indexOf('links') === sectionOrder.length - 1)
     };
 
-    // Le rendu se fait maintenant en fonction de l'ordre des sections
-    const sectionOrder = state.sectionOrder || ['socials', 'songs', 'links'];
     editorContent.innerHTML = `
-        ${cards.profile}
-        ${cards.appearance}
+        ${createProfileCard(state.profile, state.appearance)}
+        ${createAppearanceCard(state.appearance)}
         ${sectionOrder.map(key => cards[key]).join('')}
-        ${cards.settings}
+        ${createSettingsCard(state.seo)}
     `;
     
     if (selectionInfo && selectionInfo.elementId) {

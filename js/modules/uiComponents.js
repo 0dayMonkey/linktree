@@ -169,22 +169,32 @@ export function createAppearanceCard(appearance) {
     </div>`;
 }
 
-export function createItemsCard(title, items, itemRenderer, addAction1, addLabel1, addAction2, addLabel2) {
+export function createItemsCard(title, items, itemRenderer, addAction1, addLabel1, addAction2, addLabel2, isFirst, isLast) {
     const itemsHTML = (items || []).map(item => itemRenderer(item)).join('');
-    const buttons = `
+    const addButtons = `
         <button data-action="${addAction1}" class="btn btn-secondary">${addLabel1}</button>
         ${addAction2 ? `<button data-action="${addAction2}" class="btn btn-secondary">${addLabel2}</button>` : ''}
     `;
     const sectionName = title.toLowerCase().includes('social') ? 'socials' : title.toLowerCase().includes('spotify') ? 'songs' : 'links';
 
-    // NOUVEAU : Ajout de l'icône de déplacement
-    return `<div class="card draggable-section" draggable="true" data-section-name="${sectionName}">
-        <div class="card-header grab-handle">
+    const moveButtons = `
+        <div class="section-move-buttons">
+            <button class="btn-icon" data-action="move-section-up" data-section-name="${sectionName}" ${isFirst ? 'disabled' : ''}>
+                <svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path></svg>
+            </button>
+            <button class="btn-icon" data-action="move-section-down" data-section-name="${sectionName}" ${isLast ? 'disabled' : ''}>
+                <svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"></path></svg>
+            </button>
+        </div>
+    `;
+
+    return `<div class="card" data-section-name="${sectionName}">
+        <div class="card-header">
             <div class="card-header-title">
-                <span class="grab-indicator"></span>
+                ${moveButtons}
                 <h2>${title}</h2>
             </div>
-            <div class="card-header-actions">${buttons}</div>
+            <div class="card-header-actions">${addButtons}</div>
         </div>
         <div class="card-body">${itemsHTML.length > 0 ? itemsHTML : '<p class="empty-state">Aucun élément.</p>'}</div>
     </div>`;
