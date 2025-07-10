@@ -25,9 +25,10 @@ export const handleFileUpload = async (e) => {
     
     logger.info(`Uploading file for ${key}. Original size: ${(file.size / 1024).toFixed(2)} KB`);
 
+    // CORRECTION : Paramètres de compression beaucoup plus stricts pour éviter l'erreur 413
     const options = {
-        maxSizeMB: 0.5,
-        maxWidthOrHeight: 1920,
+        maxSizeMB: 0.15, // Réduction drastique de la taille maximale
+        maxWidthOrHeight: 1024, // Réduction de la résolution maximale
         useWebWorker: true,
         exifOrientation: true,
         stripExif: true
@@ -129,4 +130,11 @@ export function reorderList(list, draggedId, targetId) {
         }
     }
     return list;
+}
+
+export function handleToggle(checkboxElement) {
+    if (!checkboxElement) return;
+    const key = checkboxElement.dataset.key;
+    const isChecked = checkboxElement.checked;
+    handleStateUpdate(key, isChecked);
 }

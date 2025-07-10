@@ -33,9 +33,11 @@ body {
     justify-content: center;
     align-items: flex-start;
     min-height: 100vh;
-    /* CORRECTION : Le padding a été retiré d'ici pour éviter le scroll superflu */
     box-sizing: border-box;
     transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
+    /* NOUVEAU : Prévention du débordement de texte */
+    word-wrap: break-word;
+    overflow-x: hidden; /* Sécurité ultime contre le scroll horizontal */
 }
 
 @keyframes fadeIn {
@@ -47,9 +49,18 @@ body {
     width: 100%;
     max-width: 680px;
     text-align: center;
-    /* CORRECTION : Le padding est maintenant appliqué ici */
-    padding: 40px 20px;
+    /* CORRECTION : On ne gère que l'espacement vertical ici */
+    padding: 40px 0;
 }
+
+/* NOUVEAU : On applique l'espacement horizontal aux enfants, sauf le header pleine largeur */
+header:not(.layout-full),
+main,
+footer {
+    padding: 0 20px;
+    box-sizing: border-box;
+}
+
 
 .container:not(.skeleton-container) {
      animation: fadeIn 0.8s ease-out forwards;
@@ -62,6 +73,17 @@ header {
     align-items: center;
     position: relative;
 }
+
+/* NOUVEAU : Typographie fluide pour le titre et la description */
+#profile-title {
+    font-size: clamp(1.75rem, 5vw, 2.25rem);
+}
+#profile-description {
+    font-size: clamp(1rem, 4vw, 1.1rem);
+    margin-top: 0.5rem;
+    margin-bottom: 0;
+}
+
 
 .profile-picture {
     transition: all 0.3s ease-in-out;
@@ -79,8 +101,7 @@ header.layout-circle .profile-picture {
 header.layout-full {
     padding-top: 250px;
     margin-top: -40px;
-    margin-left: -20px;
-    margin-right: -20px;
+    /* CORRECTION : Plus besoin de marges négatives qui causaient le bug */
     margin-bottom: 30px;
 }
 
@@ -102,6 +123,7 @@ header.layout-full .profile-picture {
 header.layout-full #profile-title,
 header.layout-full #profile-description {
     text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    padding: 0 20px; /* On ajoute le padding ici pour le texte du header full-width */
 }
 
 header.layout-full .social-icons {
@@ -115,6 +137,7 @@ header.layout-full .social-icons a {
 .social-icons {
     margin-top: 16px;
     display: flex;
+    justify-content: center;
     gap: 20px;
 }
 
