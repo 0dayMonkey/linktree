@@ -73,17 +73,15 @@ export function attachEventListeners() {
 
     const debouncedInputHandler = debounce(e => {
         const target = e.target;
-        // CORRECTION #2 : Ignorer les checkboxes pour résoudre le bug du switch
-        if (target.matches('input[type="checkbox"]')) {
-            return;
-        }
         
         if (target.matches('.editable-content')) {
             const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
             handleStateUpdate(target.dataset.key, target.innerHTML, id, { skipRender: true });
         } else if (target.dataset.key) {
              const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
-             handleStateUpdate(target.dataset.key, target.value, id);
+             // CORRECTION: Utiliser `target.checked` pour les checkboxes, sinon `target.value`.
+             const value = target.type === 'checkbox' ? target.checked : target.value;
+             handleStateUpdate(target.dataset.key, value, id);
         }
     }, 400);
 
@@ -98,6 +96,8 @@ export function attachEventListeners() {
              const id = e.target.closest('[data-id]') ? parseInt(e.target.closest('[data-id]').dataset.id, 10) : null;
              handleStateUpdate(e.target.dataset.key, e.target.value, id);
         } else if (e.target.matches('input[type=checkbox]')) {
+            // NOTE: La logique est maintenant gérée par le listener 'input' pour centraliser.
+            // On appelle directement le handler ici pour une réactivité immédiate sans debounce.
             handleToggle(e);
         }
     });
