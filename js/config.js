@@ -1,7 +1,4 @@
-// js/config.js
-
 export const API = {
-    // IMPORTANT : Mettez à jour avec votre clé secrète si vous la changez
     UPDATE_SECRET_KEY: 'DINGUERIEDEVOULOIRMODIF',
     GET_DATA_URL: 'https://reliable-hamster-b1e205.netlify.app/.netlify/functions/get-data',
     UPDATE_DATA_URL: 'https://reliable-hamster-b1e205.netlify.app/.netlify/functions/update-data'
