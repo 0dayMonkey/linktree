@@ -207,6 +207,7 @@ export function attachEventListeners() {
 
     let draggedItem = null;
 
+    // --- DRAG AND DROP LOGIC (MOUSE) ---
     editorContent.addEventListener('dragstart', e => {
         if (e.target.matches('input, .editable-content, a')) {
             e.preventDefault();
@@ -225,49 +226,88 @@ export function attachEventListeners() {
 
     editorContent.addEventListener('dragover', e => {
         e.preventDefault();
-        if (!draggedItem) return;
-
-        const container = e.target.closest('.card-body');
-        if (!container) return;
-        
-        const isHorizontal = !!draggedItem.closest('[data-section-name="songs"]');
-        const afterElement = isHorizontal 
-            ? getDragAfterElementHorizontal(container, e.clientX)
-            : getDragAfterElement(container, e.clientY);
-
-        container.querySelectorAll('.item-container').forEach(el => el.classList.remove('drag-over'));
-        if (afterElement) afterElement.classList.add('drag-over');
+        handleDragMove(e.clientX, e.clientY);
     });
     
     editorContent.addEventListener('drop', e => {
         e.preventDefault();
-        if (!draggedItem) return;
-
-        const container = e.target.closest('.card[data-section-name]');
-        if (!container) return;
-        
-        container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-        
-        const listName = container.dataset.sectionName;
-        const idKey = listName === 'songs' ? 'songId' : 'id';
-        const isHorizontal = listName === 'songs';
-        
-        const draggedId = draggedItem.dataset.id;
-        const afterElement = isHorizontal
-            ? getDragAfterElementHorizontal(container.querySelector('.card-body'), e.clientX)
-            : getDragAfterElement(container.querySelector('.card-body'), e.clientY);
-
-        const targetId = afterElement ? afterElement.dataset.id : null;
-        
-        logger.info(`Reordering in list '${listName}': item ${draggedId} moved before ${targetId}`);
-        const currentState = JSON.parse(JSON.stringify(getState()));
-        const list = currentState[listName];
-        
-        currentState[listName] = reorderList(list, draggedId, targetId, idKey);
-        updateAndSave(currentState);
+        handleDragEnd(e.target);
     });
 
-    function getDragAfterElement(container, y) {
+    // --- DRAG AND DROP LOGIC (TOUCH) ---
+    editorContent.addEventListener('touchstart', e => {
+        const target = e.target.closest('.item-container');
+        if (target && !e.target.matches('input, a, button')) {
+             draggedItem = target;
+             draggedItem.classList.add('dragging');
+        }
+    }, { passive: true });
+
+    editorContent.addEventListener('touchmove', e => {
+        if (!draggedItem) return;
+        e.preventDefault(); // Empêche le défilement de la page pendant le drag
+        handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: false });
+
+    editorContent.addEventListener('touchend', e => {
+        if (!draggedItem) return;
+        // La cible du touchend est l'élément où le doigt a été levé
+        const dropTarget = document.elementFromPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+        handleDragEnd(dropTarget);
+    });
+
+    // --- COMMON DRAG AND DROP FUNCTIONS ---
+    function handleDragMove(x, y) {
+        if (!draggedItem) return;
+        
+        const container = draggedItem.closest('.card-body');
+        if (!container) return;
+
+        const isHorizontal = !!draggedItem.closest('[data-section-name="songs"]');
+        const afterElement = isHorizontal 
+            ? getDragAfterElementHorizontal(container, x)
+            : getDragAfterElementVertical(container, y);
+
+        container.querySelectorAll('.item-container').forEach(el => el.classList.remove('drag-over'));
+        if (afterElement) {
+            afterElement.classList.add('drag-over');
+        } else {
+            // Si on est à la fin, on peut ajouter une classe au container pour un indicateur
+        }
+    }
+
+    function handleDragEnd(dropTarget) {
+        if (!draggedItem) return;
+
+        const container = dropTarget.closest('.card[data-section-name]');
+        if (container) {
+            container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+            
+            const listName = container.dataset.sectionName;
+            const idKey = listName === 'songs' ? 'songId' : 'id';
+            const isHorizontal = listName === 'songs';
+
+            const draggedId = draggedItem.dataset.id;
+            // Recalculer la position une dernière fois
+            const afterElement = isHorizontal 
+                ? getDragAfterElementHorizontal(container.querySelector('.card-body'), event.clientX)
+                : getDragAfterElementVertical(container.querySelector('.card-body'), event.clientY);
+            const targetId = afterElement ? afterElement.dataset.id : null;
+            
+            logger.info(`Reordering in list '${listName}': item ${draggedId} moved before ${targetId}`);
+            const currentState = JSON.parse(JSON.stringify(getState()));
+            const list = currentState[listName];
+            
+            currentState[listName] = reorderList(list, draggedId, targetId, idKey);
+            updateAndSave(currentState);
+        }
+
+        draggedItem.classList.remove('dragging');
+        draggedItem = null;
+    }
+
+
+    function getDragAfterElementVertical(container, y) {
         const draggableElements = [...container.querySelectorAll('.item-container:not(.dragging)')];
         return draggableElements.reduce((closest, child) => {
             const box = child.getBoundingClientRect();
