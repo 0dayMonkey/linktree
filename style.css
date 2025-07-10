@@ -184,7 +184,7 @@ header.layout-full #profile-description {
     font-weight: normal; /* CORRECTION: Retrait du gras par défaut */
     border-radius: var(--link-radius, '8px');
     border: var(--link-border, 'none');
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--link-shadow, none);
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     position: relative;
     text-align: center;
@@ -209,7 +209,7 @@ header.layout-full #profile-description {
 
 .links-list a:hover {
     transform: scale(1.03);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--link-shadow, 0 6px 16px rgba(0, 0, 0, 0.12));
 }
 
 .list-header {
@@ -225,6 +225,7 @@ header.layout-full #profile-description {
     display: inline-block;
     width: 100%;
     box-sizing: border-box;
+    box-shadow: var(--header-shadow, none);
 }
 
 .section-title {
