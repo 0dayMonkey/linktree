@@ -29,8 +29,12 @@ body {
     width: 100%;
     max-width: 680px;
     text-align: center;
-    animation: fadeIn 0.8s ease-out forwards;
 }
+
+.container:not(.skeleton-container) {
+     animation: fadeIn 0.8s ease-out forwards;
+}
+
 
 header {
     margin-bottom: 20px;
@@ -118,7 +122,7 @@ header.layout-full .social-icons a {
     gap: 16px;
 }
 
-.links-list li {
+.links-list li:not(.skeleton) {
     opacity: 0;
     animation: fadeIn 0.5s ease-out forwards;
 }
@@ -197,3 +201,20 @@ footer {
     color: #3498db;
     text-decoration: none;
 }
+
+
+/* --- Skeleton Loader --- */
+@keyframes shimmer {
+    0% { background-position: -468px 0; }
+    100% { background-position: 468px 0; }
+}
+.skeleton {
+    animation: shimmer 1.5s linear infinite;
+    background-color: #f0f0f0;
+    background-image: linear-gradient(to right, #f0f0f0 8%, #e0e0e0 18%, #f0f0f0 33%);
+    background-size: 800px 104px;
+    border-radius: 6px;
+}
+.skeleton-avatar { width: 96px; height: 96px; border-radius: 50%; margin: 0 auto 16px; }
+.skeleton-text { height: 20px; margin-bottom: 10px; margin-left: auto; margin-right: auto; }
+.skeleton-button { height: 54px; }

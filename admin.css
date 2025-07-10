@@ -12,6 +12,7 @@
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
     --shadow-md: 0 4px 6px rgba(0,0,0,0.06);
     --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --skeleton-bg: #e9ecef;
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -188,6 +189,23 @@ body {
 #inline-format-toolbar button { background: transparent; border: none; color: white; cursor: pointer; padding: 6px 8px; border-radius: 4px; font-size: 14px; width: 32px; height: 32px; line-height: 1; }
 #inline-format-toolbar button:hover { background-color: #34495e; }
 #inline-format-toolbar button.active { background-color: #46627f; }
+
+/* --- Skeleton Loader --- */
+@keyframes shimmer {
+    0% { background-position: -468px 0; }
+    100% { background-position: 468px 0; }
+}
+.skeleton {
+    animation: shimmer 1.5s linear infinite;
+    background: linear-gradient(to right, var(--skeleton-bg) 8%, #dddddd 18%, var(--skeleton-bg) 33%);
+    background-size: 800px 104px;
+    border-radius: 6px;
+}
+.skeleton-avatar { width: 96px; height: 96px; border-radius: 50%; margin: 0 auto 16px; }
+.skeleton-text { height: 20px; margin-bottom: 10px; }
+.skeleton-text-short { width: 60%; }
+.skeleton-item { height: 80px; margin-bottom: 16px; }
+
 
 /* --- Responsive Design --- */
 @media (max-width: 1024px) {

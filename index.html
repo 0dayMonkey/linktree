@@ -3,13 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>linktree</title>
+    <title>Linktree</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="dynamic-style-container"></div>
-    <div class="container">
-        <header>
+    
+    <div class="container" id="page-container">
+        </div>
+
+    <template id="skeleton-template">
+        <div class="container skeleton-container">
+             <header>
+                <div class="skeleton skeleton-avatar"></div>
+                <div class="skeleton skeleton-text" style="width: 40%;"></div>
+                <div class="skeleton skeleton-text" style="width: 60%;"></div>
+            </header>
+            <main>
+                <ul class="links-list">
+                    <li class="skeleton skeleton-button"></li>
+                    <li class="skeleton skeleton-button"></li>
+                    <li class="skeleton skeleton-button"></li>
+                </ul>
+            </main>
+        </div>
+    </template>
+    
+    <template id="content-template">
+         <header>
             <img id="profile-picture" src="" alt="Photo de profil" class="profile-picture" data-editable-id="profile.pictureUrl">
             <h1 id="profile-title" data-editable-id="profile.title"></h1>
             <p id="profile-description" data-editable-id="profile.description"></p>
@@ -21,7 +42,8 @@
         <footer>
             <p>Powered by Vanilla JS</p>
         </footer>
-    </div>
+    </template>
+
 
     <script>
         const ICONS = {
@@ -40,6 +62,8 @@
             "ocean": "linear-gradient(135deg, #2E3192, #1BFFFF)",
             "dusk": "linear-gradient(135deg, #304352, #d7d2cc)"
         };
+        
+        const pageContainer = document.getElementById('page-container');
 
         function setFavicon(url) {
             if (!url || !url.startsWith('data:')) return;
@@ -59,17 +83,21 @@
         }
 
         function renderPage(data) {
+            pageContainer.innerHTML = '';
+            const content = document.getElementById('content-template').content.cloneNode(true);
+            pageContainer.appendChild(content);
+
             const { seo, appearance, profile, socials, links } = data || {};
             if (!profile) return;
 
             document.title = seo?.title || profile?.title || 'Links';
             if (seo?.faviconUrl) setFavicon(seo.faviconUrl);
 
-            const profileTitleEl = document.getElementById('profile-title');
-            const profileDescriptionEl = document.getElementById('profile-description');
+            const profileTitleEl = pageContainer.querySelector('#profile-title');
+            const profileDescriptionEl = pageContainer.querySelector('#profile-description');
 
             if (appearance) {
-                const header = document.querySelector('header');
+                const header = pageContainer.querySelector('header');
                 header.className = `layout-${appearance.pictureLayout || 'circle'}`;
 
                 let fontLink = document.getElementById('dynamic-font-link');
@@ -106,17 +134,15 @@
                 }`;
                 document.getElementById('dynamic-style-container').innerHTML = `<style>${styles}</style>`;
 
-                // Appliquer les couleurs spécifiques au titre et à la description
                 profileTitleEl.style.color = appearance.titleColor || 'inherit';
                 profileDescriptionEl.style.color = appearance.descriptionColor || 'inherit';
-
             }
 
-            document.getElementById('profile-picture').src = profile?.pictureUrl || '';
+            pageContainer.querySelector('#profile-picture').src = profile?.pictureUrl || '';
             profileTitleEl.innerHTML = profile?.title || '';
             profileDescriptionEl.innerHTML = profile?.description || '';
             
-            const socialContainer = document.getElementById('social-icons');
+            const socialContainer = pageContainer.querySelector('#social-icons');
             socialContainer.innerHTML = '';
             (socials || []).forEach(social => {
                 if (!social.url || !ICONS[social.network]) return;
@@ -131,7 +157,7 @@
                 socialContainer.appendChild(a);
             });
 
-            const linksList = document.getElementById('links-list');
+            const linksList = pageContainer.querySelector('#links-list');
             linksList.innerHTML = '';
             (links || []).forEach(item => {
                 const li = document.createElement('li');
@@ -231,8 +257,9 @@
                 postMessageToParent('reorder', { draggedId, targetId });
             });
         }
-
+        
         const isIframe = window.self !== window.top;
+
         if (isIframe) {
             window.addEventListener('message', event => {
                 if (event.data.type === 'update') {
@@ -242,11 +269,17 @@
             attachAllListeners();
         } else {
             document.addEventListener('DOMContentLoaded', () => {
-                 fetch('https://reliable-hamster-b1e205.netlify.app/.netlify/functions/get-data')
+                const skeleton = document.getElementById('skeleton-template').content.cloneNode(true);
+                pageContainer.appendChild(skeleton);
+
+                fetch('https://reliable-hamster-b1e205.netlify.app/.netlify/functions/get-data')
                     .then(res => res.json())
-                    .then(data => renderPage(data))
+                    .then(data => {
+                        renderPage(data)
+                    })
                     .catch(err => {
-                        document.body.innerHTML = `<p class="default-message">Impossible de charger les liens.</p>`;
+                        pageContainer.innerHTML = `<p class="default-message">Impossible de charger les liens.</p>`;
+                        console.error(err);
                     });
             });
         }

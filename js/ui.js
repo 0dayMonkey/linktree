@@ -12,14 +12,18 @@ export function render(state) {
     const focusedElement = document.activeElement;
     const selection = window.getSelection ? window.getSelection() : null;
     let selectionInfo = null;
+    // Sauvegarde la position du curseur si l'élément focus est éditable
     if (selection && selection.rangeCount > 0 && focusedElement && focusedElement.isContentEditable) {
         const range = selection.getRangeAt(0);
         selectionInfo = {
-            element: focusedElement,
+            elementId: focusedElement.id,
             start: range.startOffset,
             end: range.endOffset,
         };
+    } else if (focusedElement) {
+        selectionInfo = { elementId: focusedElement.id };
     }
+
 
     const scrollPosition = editorContent.scrollTop;
 
@@ -31,33 +35,29 @@ export function render(state) {
         ${createSettingsCard(state.seo)}
     `;
     
-    if (selectionInfo && selectionInfo.element) {
-        const newElement = document.getElementById(selectionInfo.element.id);
+    // Restaure le focus et la sélection
+    if (selectionInfo && selectionInfo.elementId) {
+        const newElement = document.getElementById(selectionInfo.elementId);
         if (newElement) {
             newElement.focus();
-            const newRange = document.createRange();
-            // Ensure child nodes exist before setting range
-            if (newElement.childNodes.length > 0) {
-                 const textNode = newElement.firstChild;
-                 // Clamp offsets to the actual length of the text node
-                 const startOffset = Math.min(selectionInfo.start, textNode.length);
-                 const endOffset = Math.min(selectionInfo.end, textNode.length);
-                 newRange.setStart(textNode, startOffset);
-                 newRange.setEnd(textNode, endOffset);
-                 selection.removeAllRanges();
-                 selection.addRange(newRange);
+            if (selection && selectionInfo.start !== undefined) {
+                try {
+                    const newRange = document.createRange();
+                    const textNode = newElement.firstChild || newElement;
+                    const textLength = textNode.length || 0;
+                    newRange.setStart(textNode, Math.min(selectionInfo.start, textLength));
+                    newRange.setEnd(textNode, Math.min(selectionInfo.end, textLength));
+                    selection.removeAllRanges();
+                    selection.addRange(newRange);
+                } catch (e) {
+                    console.warn("Could not restore selection.", e);
+                }
             }
-        }
-    } else if (focusedElement) {
-        const reFocusedElement = document.getElementById(focusedElement.id);
-        if (reFocusedElement) {
-            reFocusedElement.focus();
         }
     }
     
     editorContent.scrollTop = scrollPosition;
 }
-
 
 export function renderSkeleton() {
     return `
