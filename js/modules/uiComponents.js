@@ -1,8 +1,6 @@
 import { FONT_OPTIONS, SOCIAL_OPTIONS, GRADIENT_OPTIONS } from '../config.js';
 import { ICONS } from '../icons.js';
 
-const DRAG_HANDLE_ICON = `<svg class="drag-handle" draggable="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm3 1a1 1 0 1 0-2 0 1 1 0 0 0 2 0zM4 5a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm3 1a1 1 0 1 0-2 0 1 1 0 0 0 2 0zM4 8a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm3 1a1 1 0 1 0-2 0 1 1 0 0 0 2 0zm3-4a1 1 0 1 0-2 0 1 1 0 0 0 2 0zM10 8a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm1 1a1 1 0 1 0-2 0 1 1 0 0 0 2 0zM7 11a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm1 1a1 1 0 1 0-2 0 1 1 0 0 0 2 0z"/></svg>`;
-
 function createToggleSwitch(key, isChecked, label) {
     const uniqueId = `toggle-${key.replace(/\./g, '-')}`;
     return `
@@ -193,11 +191,8 @@ export function createItemsCard(title, items, itemRenderer, addAction1, addLabel
 }
 
 export function createSocialItemHTML(item) {
-    return `<div class="item-container" data-id="${item.id}">
-        <div class="item-header">
-            <div class="item-title">${DRAG_HANDLE_ICON} <span>Icône</span></div>
-            <button data-action="delete" class="btn btn-danger">✖</button>
-        </div>
+    return `<div class="item-container" data-id="${item.id}" draggable="true">
+        <div class="item-header"><span>Icône</span><button data-action="delete" class="btn btn-danger">✖</button></div>
         <div class="form-group"><label>Réseau</label>${createCustomSelectHTML('network', SOCIAL_OPTIONS, item.network, { id: item.id, type: 'social' })}</div>
         <div class="form-group"><label for="social-url-${item.id}">URL</label><input type="text" id="social-url-${item.id}" data-key="url" data-id="${item.id}" value="${item.url || ''}"></div>
     </div>`;
@@ -205,24 +200,16 @@ export function createSocialItemHTML(item) {
 
 export function createLinkItemHTML(item) {
     const dataIdAttr = `data-id="${item.id}"`;
-    const title = item.type === 'header' ? 'En-tête' : 'Lien';
-
     if (item.type === 'header') {
-        return `<div class="item-container" ${dataIdAttr}>
-            <div class="item-header">
-                <div class="item-title">${DRAG_HANDLE_ICON} <span>${title}</span></div>
-                <button data-action="delete" class="btn btn-danger">✖</button>
-            </div>
+        return `<div class="item-container" ${dataIdAttr} draggable="true">
+            <div class="item-header"><span>En-tête</span><button data-action="delete" class="btn btn-danger">✖</button></div>
             <div class="form-group"><label for="header-title-${item.id}">Texte</label>
                 <div id="header-title-${item.id}" data-key="title" class="editable-content" contenteditable="true" data-placeholder="Nouvel en-tête">${item.title || ''}</div>
             </div>
         </div>`;
     }
-    return `<div class="item-container" ${dataIdAttr}>
-        <div class="item-header">
-            <div class="item-title">${DRAG_HANDLE_ICON} <span>${title}</span></div>
-            <button data-action="delete" class="btn btn-danger">✖</button>
-        </div>
+    return `<div class="item-container" ${dataIdAttr} draggable="true">
+        <div class="item-header"><span>Lien</span><button data-action="delete" class="btn btn-danger">✖</button></div>
         <div class="form-group"><label for="link-title-${item.id}">Titre</label>
             <div id="link-title-${item.id}" data-key="title" class="editable-content" contenteditable="true" data-placeholder="Titre du lien">${item.title || ''}</div>
         </div>

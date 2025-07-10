@@ -97,11 +97,10 @@ body {
 .btn-danger { background-color: transparent; color: var(--danger-color); padding: 8px; }
 .btn-danger:hover { background-color: rgba(220, 53, 69, 0.1); }
 
-.item-container { background: #F8F9FA; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 16px; padding: 20px; }
+.item-container { background: #F8F9FA; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 16px; padding: 20px; cursor: grab; }
+.item-container:active { cursor: grabbing; }
 .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.item-title { display: flex; align-items: center; gap: 8px; font-weight: 600; }
-.drag-handle { cursor: grab; color: #999; }
-.drag-handle:active { cursor: grabbing; }
+.item-header span { font-weight: 600; }
 
 .item-container.dragging { opacity: 0.5; border: 2px dashed var(--primary-color); }
 .drag-over { padding-top: 60px; background-color: rgba(0, 93, 255, 0.05); }

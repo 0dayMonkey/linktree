@@ -73,8 +73,7 @@ export function attachEventListeners() {
 
     const debouncedInputHandler = debounce(e => {
         const target = e.target;
-        
-        // CORRECTION DÉFINITIVE : Ignorer complètement les checkboxes dans ce handler.
+        // CORRECTION #2 : Ignorer les checkboxes pour résoudre le bug du switch
         if (target.matches('input[type="checkbox"]')) {
             return;
         }
@@ -89,19 +88,16 @@ export function attachEventListeners() {
     }, 400);
 
     editorContent.addEventListener('input', debouncedInputHandler);
-    
     document.addEventListener('selectionchange', showFormatToolbar);
     editorContent.addEventListener('touchend', () => setTimeout(showFormatToolbar, 100));
 
     editorContent.addEventListener('change', e => {
-        const target = e.target;
-        if (target.matches('.file-upload-input')) {
+        if (e.target.matches('.file-upload-input')) {
             handleFileUpload(e);
-        } else if (target.matches('input[type="color"]')) {
-             const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
-             handleStateUpdate(target.dataset.key, target.value, id);
-        } else if (target.matches('input[type="checkbox"]')) {
-            // Seul ce bloc gère maintenant les checkboxes, ce qui est correct.
+        } else if (e.target.matches('input[type=color]')) {
+             const id = e.target.closest('[data-id]') ? parseInt(e.target.closest('[data-id]').dataset.id, 10) : null;
+             handleStateUpdate(e.target.dataset.key, e.target.value, id);
+        } else if (e.target.matches('input[type=checkbox]')) {
             handleToggle(e);
         }
     });
@@ -180,6 +176,11 @@ export function attachEventListeners() {
     let draggedItem = null;
 
     editorContent.addEventListener('dragstart', e => {
+        // CORRECTION #1 : Annuler le drag si on est sur un champ de saisie
+        if (e.target.matches('input, .editable-content, a')) {
+            e.preventDefault();
+            return;
+        }
         draggedItem = e.target.closest('.item-container');
         if (draggedItem) setTimeout(() => { draggedItem.classList.add('dragging'); }, 0);
     });
