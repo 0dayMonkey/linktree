@@ -74,6 +74,11 @@ export function attachEventListeners() {
     const debouncedInputHandler = debounce(e => {
         const target = e.target;
         
+        // CORRECTION : Ignorer les champs de type 'file' car ils sont gérés par le listener 'change'
+        if (target.matches('input[type="file"]')) {
+            return;
+        }
+        
         if (target.matches('.editable-content')) {
             const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
             handleStateUpdate(target.dataset.key, target.innerHTML, id, { skipRender: true });
