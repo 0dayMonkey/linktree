@@ -251,7 +251,11 @@ function createAppearanceCard(appearance) {
         <div class="card-header"><h2>Apparence</h2></div>
         <div class="card-body">
             <div class="form-group"><label>Police</label>${createCustomSelectHTML('appearance.fontFamily', FONT_OPTIONS, appearance.fontFamily, { type: 'font' })}</div>
-            ${createColorInputHTML('appearance.textColor', appearance.textColor, 'Couleur du texte')}
+             <div class="form-grid">
+                ${createColorInputHTML('appearance.titleColor', appearance.titleColor, 'Couleur du Titre')}
+                ${createColorInputHTML('appearance.descriptionColor', appearance.descriptionColor, 'Couleur de la Description')}
+            </div>
+            ${createColorInputHTML('appearance.textColor', appearance.textColor, 'Couleur du texte général')}
             <div class="form-group"><label>Type de fond</label>${createCustomSelectHTML('appearance.background.type', bgTypeOptions, bg.type, { type: 'bg_type'})}</div>
             <div id="background-controls">${bgControls()}</div>
             <hr style="border:none; border-top:1px solid var(--border-color); margin: 24px 0;">

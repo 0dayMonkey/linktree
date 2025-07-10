@@ -65,6 +65,9 @@
             document.title = seo?.title || profile?.title || 'Links';
             if (seo?.faviconUrl) setFavicon(seo.faviconUrl);
 
+            const profileTitleEl = document.getElementById('profile-title');
+            const profileDescriptionEl = document.getElementById('profile-description');
+
             if (appearance) {
                 const header = document.querySelector('header');
                 header.className = `layout-${appearance.pictureLayout || 'circle'}`;
@@ -102,11 +105,16 @@
                     --text-color: ${appearance.textColor};
                 }`;
                 document.getElementById('dynamic-style-container').innerHTML = `<style>${styles}</style>`;
+
+                // Appliquer les couleurs spécifiques au titre et à la description
+                profileTitleEl.style.color = appearance.titleColor || 'inherit';
+                profileDescriptionEl.style.color = appearance.descriptionColor || 'inherit';
+
             }
 
             document.getElementById('profile-picture').src = profile?.pictureUrl || '';
-            document.getElementById('profile-title').innerHTML = profile?.title || '';
-            document.getElementById('profile-description').innerHTML = profile?.description || '';
+            profileTitleEl.innerHTML = profile?.title || '';
+            profileDescriptionEl.innerHTML = profile?.description || '';
             
             const socialContainer = document.getElementById('social-icons');
             socialContainer.innerHTML = '';

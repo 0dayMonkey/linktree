@@ -80,14 +80,16 @@ header.layout-full .profile-picture {
 }
 
 header.layout-full #profile-title,
-header.layout-full #profile-description,
+header.layout-full #profile-description {
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
 header.layout-full .social-icons {
-    color: white;
     text-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 
 header.layout-full .social-icons a {
-    color: white;
+    color: var(--text-color); /* Utilise la couleur générale, qui peut être surchargée */
 }
 
 
