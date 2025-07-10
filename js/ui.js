@@ -1,7 +1,9 @@
 import {
     createProfileCard, createAppearanceCard, createItemsCard,
-    createSocialItemHTML, createLinkItemHTML, createSettingsCard
+    createSocialItemHTML, createLinkItemHTML, createSongItemHTML, createSettingsCard
 } from './modules/uiComponents.js';
+import { API } from '../config.js';
+import logger from '../logger.js';
 
 const editorContent = document.getElementById('editor-content');
 const contextMenu = document.getElementById('custom-context-menu');
@@ -14,7 +16,6 @@ export function render(state) {
     const focusedElement = document.activeElement;
     let selectionInfo = null;
 
-    // Sauvegarde de la position du curseur et du focus
     if (focusedElement) {
         if (focusedElement.isContentEditable) {
             const selection = window.getSelection();
@@ -27,14 +28,14 @@ export function render(state) {
                     end: range.endOffset
                 };
             }
-        } else if (typeof focusedElement.selectionStart === 'number') { // Gère les <input>
+        } else if (typeof focusedElement.selectionStart === 'number') {
             selectionInfo = {
                 elementId: focusedElement.id,
                 isContentEditable: false,
                 start: focusedElement.selectionStart,
                 end: focusedElement.selectionEnd
             };
-        } else { // Fallback pour les éléments qui ont juste le focus
+        } else {
              selectionInfo = { elementId: focusedElement.id };
         }
     }
@@ -45,11 +46,11 @@ export function render(state) {
         ${createProfileCard(state.profile, state.appearance)}
         ${createAppearanceCard(state.appearance)}
         ${createItemsCard('Icônes Sociales', state.socials || [], createSocialItemHTML, 'add-social', 'Ajouter une icône')}
+        ${createItemsCard('Chansons Spotify', state.songs || [], createSongItemHTML, 'add-song', 'Ajouter une chanson')}
         ${createItemsCard('Liens & En-têtes', state.links || [], createLinkItemHTML, 'add-link', 'Ajouter un lien', 'add-header', 'Ajouter un en-tête')}
         ${createSettingsCard(state.seo)}
     `;
     
-    // Restauration du focus et de la position du curseur
     if (selectionInfo && selectionInfo.elementId) {
         const newElement = document.getElementById(selectionInfo.elementId);
         if (newElement) {
@@ -103,6 +104,77 @@ export function renderSkeleton() {
         </div>
     `;
 }
+
+// NOUVEAU : Modale de recherche Spotify
+export function showSpotifySearch(onAddSong) {
+    modalContainer.innerHTML = `
+        <div class="modal-box spotify-modal">
+            <h3 class="modal-title">Rechercher une chanson sur Spotify</h3>
+            <div class="form-group">
+                <input type="text" id="spotify-search-input" placeholder="Titre, artiste..." autocomplete="off">
+            </div>
+            <div id="spotify-search-results" class="spotify-search-results"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="modal-cancel">Fermer</button>
+            </div>
+        </div>
+    `;
+    modalContainer.classList.add('is-visible');
+
+    const searchInput = document.getElementById('spotify-search-input');
+    const resultsContainer = document.getElementById('spotify-search-results');
+
+    const closeModal = () => modalContainer.classList.remove('is-visible');
+
+    document.getElementById('modal-cancel').addEventListener('click', closeModal);
+
+    let searchTimeout;
+    searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(async () => {
+            const query = searchInput.value;
+            if (query.length < 3) {
+                resultsContainer.innerHTML = '';
+                return;
+            }
+            resultsContainer.innerHTML = '<div class="spinner"></div>';
+
+            try {
+                const response = await fetch(API.SEARCH_SPOTIFY_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ query })
+                });
+                const tracks = await response.json();
+                
+                resultsContainer.innerHTML = tracks.map(track => `
+                    <div class="spotify-result-item" data-song='${JSON.stringify(track)}'>
+                        <img src="${track.albumArtUrl}" alt="Pochette">
+                        <div>
+                            <div class="title">${track.title}</div>
+                            <div class="artist">${track.artist}</div>
+                        </div>
+                        <button class="btn btn-primary btn-add-song">Ajouter</button>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                resultsContainer.innerHTML = '<p>Erreur de recherche.</p>';
+                logger.error("Spotify search failed", error);
+            }
+        }, 500);
+    });
+
+    resultsContainer.addEventListener('click', e => {
+        const button = e.target.closest('.btn-add-song');
+        if (button) {
+            const item = button.closest('.spotify-result-item');
+            const songData = JSON.parse(item.dataset.song);
+            onAddSong(songData);
+            closeModal();
+        }
+    });
+}
+
 
 export function showConfirmation(title, text) {
     return new Promise((resolve) => {

@@ -1,5 +1,5 @@
 import { updateAndSave, getState, handleStateUpdate } from './state.js';
-import { showConfirmation, showContextMenu, hideContextMenu } from './ui.js';
+import { showConfirmation, showContextMenu, hideContextMenu, showSpotifySearch } from './ui.js';
 import logger from './logger.js';
 import { 
     debounce, handleFileUpload, handleContextMenuAction, 
@@ -74,7 +74,6 @@ export function attachEventListeners() {
     const debouncedInputHandler = debounce(e => {
         const target = e.target;
         
-        // CORRECTION : Ignorer les champs de type 'file' car ils sont gérés par le listener 'change'
         if (target.matches('input[type="file"]')) {
             return;
         }
@@ -113,13 +112,33 @@ export function attachEventListeners() {
             const currentState = JSON.parse(JSON.stringify(getState()));
             let stateChanged = true;
 
-            if (action === 'delete') {
+            if (action === 'delete-song') {
+                 const itemEl = e.target.closest('[data-id]');
+                 const songId = itemEl.dataset.id;
+                 currentState.songs = (currentState.songs || []).filter(item => item.songId !== songId);
+            } else if (action === 'delete') {
                 const itemEl = e.target.closest('[data-id]');
                 const confirmed = await showConfirmation('Êtes-vous sûr(e) ?', 'Cette action est irréversible.');
                 if (!itemEl || !confirmed) return logger.info('Deletion cancelled by user.');
                 const id = parseInt(itemEl.dataset.id, 10);
                 currentState.links = (currentState.links || []).filter(item => item.id !== id);
                 currentState.socials = (currentState.socials || []).filter(item => item.id !== id);
+            } else if (action === 'add-song') {
+                showSpotifySearch((newSong) => {
+                    const currentState = JSON.parse(JSON.stringify(getState()));
+                    if (!currentState.songs) currentState.songs = [];
+                    // Vérifier que la chanson n'existe pas déjà
+                    if (currentState.songs.some(s => s.songId === newSong.songId)) {
+                        showConfirmation('Erreur', 'Cette chanson est déjà dans votre liste.');
+                        return;
+                    }
+                    currentState.songs.push({
+                        ...newSong,
+                        order: currentState.songs.length
+                    });
+                    updateAndSave(currentState);
+                });
+                stateChanged = false;
             } else if (action === 'add-link') {
                 currentState.links.push({ type: 'link', id: Date.now(), title: 'Nouveau Lien', url: 'https://', order: currentState.links.length });
             } else if (action === 'add-header') {
@@ -208,17 +227,18 @@ export function attachEventListeners() {
         container.querySelector('.card-body').querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
         
         const listNameAttr = container.dataset.listName;
-        const listName = listNameAttr === 'liens-&-en-têtes' ? 'links' : 'socials';
+        const listName = listNameAttr === 'liens-&-en-têtes' ? 'links' : 
+                         listNameAttr === 'icônes-sociales' ? 'socials' : 'songs';
         
-        const draggedId = parseInt(draggedItem.dataset.id, 10);
+        const draggedId = draggedItem.dataset.id;
         const afterElement = getDragAfterElement(container.querySelector('.card-body'), e.clientY);
-        const targetId = afterElement ? parseInt(afterElement.dataset.id, 10) : null;
+        const targetId = afterElement ? afterElement.dataset.id : null;
         
         logger.info(`Reordering in editor: item ${draggedId} moved before ${targetId} in ${listName}`);
         const currentState = JSON.parse(JSON.stringify(getState()));
         const list = currentState[listName];
         
-        currentState[listName] = reorderList(list, draggedId, targetId);
+        currentState[listName] = reorderList(list, draggedId, targetId, listName === 'songs' ? 'songId' : 'id');
         updateAndSave(currentState);
     });
 

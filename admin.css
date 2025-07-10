@@ -101,6 +101,13 @@ body {
 .item-container:active { cursor: grabbing; }
 .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .item-header span { font-weight: 600; }
+/* NOUVEAU : Styles pour l'aperçu des chansons */
+.item-preview { display: flex; align-items: center; gap: 12px; }
+.item-preview img { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; }
+.item-preview div { display: flex; flex-direction: column; }
+.item-title { font-weight: 600; }
+.item-subtitle { font-size: 0.9rem; color: var(--text-secondary); }
+
 
 .item-container.dragging { opacity: 0.5; border: 2px dashed var(--primary-color); }
 .drag-over { padding-top: 60px; background-color: rgba(0, 93, 255, 0.05); }
@@ -139,6 +146,17 @@ body {
 .modal-text { font-size: 0.95rem; color: var(--text-secondary); margin: 0 0 24px 0; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
 
+/* NOUVEAU : Styles pour la modale Spotify */
+.spotify-modal { max-width: 500px; }
+.spotify-search-results { max-height: 300px; overflow-y: auto; margin-top: 16px; border-top: 1px solid var(--border-color); }
+.spotify-result-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid var(--border-color); }
+.spotify-result-item img { width: 50px; height: 50px; border-radius: 4px; object-fit: cover; }
+.spotify-result-item .title { font-weight: 600; }
+.spotify-result-item .artist { font-size: 0.9rem; color: var(--text-secondary); }
+.spotify-result-item .btn-add-song { margin-left: auto; }
+.spinner { width: 32px; height: 32px; border: 4px solid var(--border-color); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
 .custom-select { position: relative; width: 100%; font-family: var(--font-family); }
 .select-selected { background-color: var(--pane-bg); padding: 10px 12px; border: 1px solid #CED4DA; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: border-color 0.2s, box-shadow 0.2s; user-select: none; min-height: 20px; }
 .select-selected > span, .select-selected > div { display: flex; align-items: center; gap: 8px; }
@@ -162,13 +180,6 @@ body {
 #inline-format-toolbar button { background: transparent; border: none; color: white; cursor: pointer; padding: 6px 8px; border-radius: 4px; font-size: 14px; width: 32px; height: 32px; line-height: 1; }
 #inline-format-toolbar button:hover { background-color: #34495e; }
 #inline-format-toolbar button.active { background-color: #46627f; }
-
-.toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
-.toggle-switch input { opacity: 0; width: 0; height: 0; }
-.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
-.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-input:checked + .slider { background-color: var(--primary-color); }
-input:checked + .slider:before { transform: translateX(20px); }
 
 @keyframes shimmer { 0% { background-position: -468px 0; } 100% { background-position: 468px 0; } }
 .skeleton { animation: shimmer 1.5s linear infinite; background: linear-gradient(to right, var(--skeleton-bg) 8%, #dddddd 18%, var(--skeleton-bg) 33%); background-size: 800px 104px; border-radius: 6px; }

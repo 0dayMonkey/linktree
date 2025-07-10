@@ -4,7 +4,7 @@ import {
 import { ICONS } from '../icons.js';
 
 function createStyleSection(title, type, appearance) {
-    const style = appearance[type]; // 'link' or 'header'
+    const style = appearance[type];
     return `
         <div class="style-section">
             <h4>${title}</h4>
@@ -27,7 +27,6 @@ function createStyleSection(title, type, appearance) {
     `;
 }
 
-// CORRECTION : Affiche l'aperçu pour les URL http et les données Base64
 export function createFileUploadHTML(key, currentSrc, label, id = '', accept = 'image/*') {
     const uniqueId = `upload-${key.replace(/\./g, '-')}-${id || 'main'}`;
     const closestId = id ? `data-id="${id}"` : '';
@@ -181,6 +180,23 @@ export function createItemsCard(title, items, itemRenderer, addAction1, addLabel
         <div class="card-body">${itemsHTML.length > 0 ? itemsHTML : '<p class="empty-state">Aucun élément.</p>'}</div>
     </div>`;
 }
+
+// NOUVEAU : Fonction pour créer une carte de chanson dans l'admin
+export function createSongItemHTML(item) {
+    return `<div class="item-container" data-id="${item.songId}" draggable="true">
+        <div class="item-header">
+            <div class="item-preview">
+                <img src="${item.albumArtUrl}" alt="Pochette d'album">
+                <div>
+                    <span class="item-title">${item.title}</span>
+                    <span class="item-subtitle">${item.artist}</span>
+                </div>
+            </div>
+            <button data-action="delete-song" class="btn btn-danger">✖</button>
+        </div>
+    </div>`;
+}
+
 
 export function createSocialItemHTML(item) {
     return `<div class="item-container" data-id="${item.id}" draggable="true">

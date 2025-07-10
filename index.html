@@ -40,6 +40,7 @@
             <div id="social-icons" class="social-icons"></div>
         </header>
         <main>
+            <div id="spotify-carousel-container"></div>
             <ul id="links-list" class="links-list"></ul>
         </main>
         <footer>
@@ -80,7 +81,7 @@
             const content = document.getElementById('content-template').content.cloneNode(true);
             pageContainer.appendChild(content);
 
-            const { seo, appearance, profile, socials, links } = data || {};
+            const { seo, appearance, profile, socials, links, songs } = data || {};
             if (!profile) return;
 
             document.title = seo?.title || profile?.title || 'Links';
@@ -155,6 +156,24 @@
                 a.draggable = true;
                 socialContainer.appendChild(a);
             });
+            
+            // Rendu du carrousel Spotify
+            const spotifyContainer = pageContainer.querySelector('#spotify-carousel-container');
+            if (songs && songs.length > 0) {
+                spotifyContainer.innerHTML = `
+                    <h2 class="section-title">Mes sons du moment</h2>
+                    <div class="spotify-carousel">
+                        ${songs.map(song => `
+                            <a href="${song.spotifyUrl}" target="_blank" class="song-card" data-editable-id="songs.${song.songId}">
+                                <img src="${song.albumArtUrl}" alt="Pochette de ${song.title}">
+                                <div class="song-title">${song.title}</div>
+                                <div class="song-artist">${song.artist}</div>
+                            </a>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
 
             const linksList = pageContainer.querySelector('#links-list');
             linksList.innerHTML = '';
@@ -238,8 +257,8 @@
                 e.preventDefault();
                 if (!draggedItem) return;
                 
-                const targetContainer = e.target.closest('.links-list, .social-icons');
-                const draggedContainer = draggedItem.closest('.links-list, .social-icons');
+                const targetContainer = e.target.closest('.links-list, .social-icons, .spotify-carousel');
+                const draggedContainer = draggedItem.closest('.links-list, .social-icons, .spotify-carousel');
                 
                 if (!targetContainer || targetContainer !== draggedContainer) {
                     draggedItem.style.opacity = '1';

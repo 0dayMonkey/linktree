@@ -3,7 +3,9 @@
 export const API = {
     UPDATE_SECRET_KEY: 'DINGUERIEDEVOULOIRMODIF',
     GET_DATA_URL: 'https://reliable-hamster-b1e205.netlify.app/.netlify/functions/get-data',
-    UPDATE_DATA_URL: 'https://reliable-hamster-b1e205.netlify.app/.netlify/functions/update-data'
+    UPDATE_DATA_URL: 'https://reliable-hamster-b1e205.netlify.app/.netlify/functions/update-data',
+    // NOUVEAU : URL pour la recherche Spotify
+    SEARCH_SPOTIFY_URL: 'https://reliable-hamster-b1e205.netlify.app/.netlify/functions/search-spotify'
 };
 
 export const CLOUDINARY = {

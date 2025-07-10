@@ -1,7 +1,7 @@
 import { updateAndSave, getState, handleStateUpdate } from '../state.js';
 import { showConfirmation, hideContextMenu } from '../ui.js';
 import logger from '../logger.js';
-import { CLOUDINARY } from '../config.js'; // Importer la configuration
+import { CLOUDINARY } from '../config.js';
 
 export const debounce = (func, delay) => {
     let timeoutId;
@@ -11,7 +11,6 @@ export const debounce = (func, delay) => {
     };
 };
 
-// MODIFIÉ : Utilise la configuration centralisée
 export const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     const key = e.target.dataset.key;
@@ -113,8 +112,9 @@ export function handleSelectOption(e) {
     handleStateUpdate(key, value, id);
 }
 
-export function reorderList(list, draggedId, targetId) {
-    const draggedIndex = list.findIndex(item => item.id === draggedId);
+// MODIFIÉ : La fonction de réorganisation peut maintenant utiliser une clé personnalisée (songId)
+export function reorderList(list, draggedId, targetId, idKey = 'id') {
+    const draggedIndex = list.findIndex(item => String(item[idKey]) === String(draggedId));
     if (draggedIndex === -1) return list;
 
     const [draggedItem] = list.splice(draggedIndex, 1);
@@ -122,7 +122,7 @@ export function reorderList(list, draggedId, targetId) {
     if (targetId === null) {
         list.push(draggedItem);
     } else {
-        const targetIndex = list.findIndex(item => item.id === targetId);
+        const targetIndex = list.findIndex(item => String(item[idKey]) === String(targetId));
         if (targetIndex !== -1) {
             list.splice(targetIndex, 0, draggedItem);
         } else {
