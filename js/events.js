@@ -3,7 +3,7 @@ import { showConfirmation, showContextMenu, hideContextMenu } from './ui.js';
 import logger from './logger.js';
 import { 
     debounce, handleFileUpload, handleContextMenuAction, 
-    handleCustomSelect, handleSelectOption, reorderList, handleToggle
+    handleCustomSelect, handleSelectOption, reorderList, handleToggle 
 } from './modules/eventHandlers.js';
 
 export function attachEventListeners() {
@@ -71,32 +71,33 @@ export function attachEventListeners() {
         }
     });
 
+    // CORRIGÉ : Ce gestionnaire ne s'occupe que des entrées de texte continues.
     const debouncedInputHandler = debounce(e => {
         const target = e.target;
-        if (target.matches('input[type=file]') || target.matches('input[type=checkbox]')) {
-            return;
-        }
         
         if (target.matches('.editable-content')) {
             const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
             handleStateUpdate(target.dataset.key, target.innerHTML, id, { skipRender: true });
-        } else if (target.dataset.key) {
+        } else if (target.matches('input[type="text"]')) {
              const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
              handleStateUpdate(target.dataset.key, target.value, id);
         }
     }, 400);
 
     editorContent.addEventListener('input', debouncedInputHandler);
+    
     document.addEventListener('selectionchange', showFormatToolbar);
     editorContent.addEventListener('touchend', () => setTimeout(showFormatToolbar, 100));
 
+    // Ce gestionnaire gère les changements de valeur discrets (clics, sélections).
     editorContent.addEventListener('change', e => {
-        if (e.target.matches('.file-upload-input')) {
+        const target = e.target;
+        if (target.matches('.file-upload-input')) {
             handleFileUpload(e);
-        } else if (e.target.matches('input[type=color]')) {
-             const id = e.target.closest('[data-id]') ? parseInt(e.target.closest('[data-id]').dataset.id, 10) : null;
-             handleStateUpdate(e.target.dataset.key, e.target.value, id);
-        } else if (e.target.matches('input[type=checkbox]')) {
+        } else if (target.matches('input[type="color"]')) {
+             const id = target.closest('[data-id]') ? parseInt(target.closest('[data-id]').dataset.id, 10) : null;
+             handleStateUpdate(target.dataset.key, target.value, id);
+        } else if (target.matches('input[type="checkbox"]')) {
             handleToggle(e);
         }
     });
