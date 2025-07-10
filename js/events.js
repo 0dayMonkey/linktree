@@ -162,18 +162,14 @@ export function attachEventListeners() {
         const toolbarHeight = formatToolbar.offsetHeight;
         const toolbarWidth = formatToolbar.offsetWidth;
 
-        // Positionne la barre d'outils au-dessus de la sélection
         let top = rect.top + window.scrollY - toolbarHeight - 8;
         
-        // Si elle sort de l'écran par le haut, la positionne en dessous
         if (top < window.scrollY) {
             top = rect.bottom + window.scrollY + 8;
         }
 
-        // Centre horizontalement par rapport à la sélection
         let left = rect.left + window.scrollX + (rect.width / 2) - (toolbarWidth / 2);
 
-        // S'assure qu'elle ne sort pas de l'écran sur les côtés
         left = Math.max(8, left);
         left = Math.min(left, window.innerWidth - toolbarWidth - 8);
 
