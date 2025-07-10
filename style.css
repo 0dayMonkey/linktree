@@ -34,7 +34,7 @@ body {
     min-height: 100vh;
     box-sizing: border-box;
     word-wrap: break-word;
-    overflow-x: hidden;
+    overflow-x: hidden; /* CORRECTION : Empêche tout défilement horizontal */
 }
 
 @keyframes fadeIn {
