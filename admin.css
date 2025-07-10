@@ -80,6 +80,8 @@ body {
 .btn-icon svg { width: 20px; height: 20px; }
 .card-body { padding: 20px; }
 .card-body h4 { font-size: 1rem; font-weight: 600; margin-top: 0; margin-bottom: 16px; color: var(--text-primary); }
+.card-body h5 { font-size: 0.9rem; font-weight: 600; margin-top: 24px; margin-bottom: 16px; color: var(--text-secondary); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;}
+
 
 .style-section {
     background-color: #fdfdfd;
