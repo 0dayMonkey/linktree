@@ -1,4 +1,6 @@
-import { FONT_OPTIONS, SOCIAL_OPTIONS, GRADIENT_OPTIONS } from '../config.js';
+import {
+    FONT_OPTIONS, SOCIAL_OPTIONS, GRADIENT_OPTIONS
+} from '../config.js';
 import { ICONS } from '../icons.js';
 
 function createStyleSection(title, type, appearance) {
@@ -25,14 +27,17 @@ function createStyleSection(title, type, appearance) {
     `;
 }
 
+// CORRECTION : Affiche l'aperçu pour les URL http et les données Base64
 export function createFileUploadHTML(key, currentSrc, label, id = '', accept = 'image/*') {
     const uniqueId = `upload-${key.replace(/\./g, '-')}-${id || 'main'}`;
     const closestId = id ? `data-id="${id}"` : '';
+    const hasImage = currentSrc && (currentSrc.startsWith('data:image') || currentSrc.startsWith('http'));
+
     return `<div class="form-group" ${closestId}>
         <label>${label}</label>
         <label class="file-upload-wrapper" for="${uniqueId}">
-            ${currentSrc && currentSrc.startsWith('data:image') ? `<img src="${currentSrc}" alt="Aperçu" class="file-upload-preview">` : ''}
-            <span class="file-upload-text">${currentSrc && currentSrc.startsWith('data:image') ? 'Cliquez pour changer' : '<strong>Cliquez pour téléverser</strong>'}</span>
+            ${hasImage ? `<img src="${currentSrc}" alt="Aperçu" class="file-upload-preview">` : ''}
+            <span class="file-upload-text">${hasImage ? 'Cliquez pour changer' : '<strong>Cliquez pour téléverser</strong>'}</span>
         </label>
         <input type="file" id="${uniqueId}" data-key="${key}" class="file-upload-input" accept="${accept}">
     </div>`;
