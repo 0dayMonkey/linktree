@@ -136,11 +136,14 @@
             orderedSections.forEach(sectionKey => {
                 if (sectionKey === 'socials' && socials && socials.length > 0) {
                     const socialContainer = document.createElement('div');
-                    socialContainer.className = 'social-icons';
-                    socialContainer.innerHTML = socials.map(social => {
-                        if (!social.url || !ICONS[social.network]) return '';
-                        return `<a href="${social.url}" target="_blank" rel="noopener noreferrer" title="${social.network}" data-editable-id="socials.${social.id}" draggable="true">${ICONS[social.network]}</a>`;
-                    }).join('');
+                    socialContainer.innerHTML = `
+                        <h2 class="section-title">Mes réseaux</h2>
+                        <div class="social-icons">
+                            ${socials.map(social => {
+                                if (!social.url || !ICONS[social.network]) return '';
+                                return `<a href="${social.url}" target="_blank" rel="noopener noreferrer" title="${social.network}" data-editable-id="socials.${social.id}" draggable="true">${ICONS[social.network]}</a>`;
+                            }).join('')}
+                        </div>`;
                     mainContent.appendChild(socialContainer);
                 }
                 else if (sectionKey === 'songs' && songs && songs.length > 0) {

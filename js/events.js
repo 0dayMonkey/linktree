@@ -1,9 +1,9 @@
 import { updateAndSave, getState, handleStateUpdate } from './state.js';
 import { showConfirmation, showContextMenu, hideContextMenu, showSpotifySearch } from './ui.js';
 import logger from './logger.js';
-import { 
-    debounce, handleFileUpload, handleContextMenuAction, 
-    handleCustomSelect, handleSelectOption, reorderList 
+import {
+    debounce, handleFileUpload, handleContextMenuAction,
+    handleCustomSelect, handleSelectOption, reorderList
 } from './modules/eventHandlers.js';
 
 export function attachEventListeners() {
@@ -13,7 +13,6 @@ export function attachEventListeners() {
 
     if (!editorContent) return;
 
-    // ... [La fonction showFormatToolbar et les listeners associés restent inchangés] ...
     const showFormatToolbar = () => {
         const selection = window.getSelection();
         if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
@@ -77,7 +76,6 @@ export function attachEventListeners() {
 
     editorContent.addEventListener('input', debouncedInputHandler);
     document.addEventListener('selectionchange', showFormatToolbar);
-    editorContent.addEventListener('touchend', () => setTimeout(showFormatToolbar, 100));
 
     editorContent.addEventListener('change', e => {
         if (e.target.matches('.file-upload-input')) {
@@ -153,7 +151,6 @@ export function attachEventListeners() {
         }
     });
     
-    // ... [Le listener 'message' reste inchangé] ...
     window.addEventListener('message', e => {
         if (e.data.type === 'showContextMenu') {
             showContextMenu(e.data.payload);
@@ -184,17 +181,13 @@ export function attachEventListeners() {
 
     contextMenu.addEventListener('click', e => handleContextMenuAction(e));
 
-    // --- LOGIQUE DE GLISSER-DÉPOSER UNIFIÉE ---
+    // --- LOGIQUE DE GLISSER-DÉPOSER UNIFIÉE (REFONTE) ---
     let draggedItem = null;
-    let lastX = 0;
-    let lastY = 0;
 
-    function onDragStart(target, x, y) {
+    function onDragStart(target) {
         if (!target || target.matches('input, a, button, .editable-content')) return;
         draggedItem = target.closest('.item-container');
         if (draggedItem) {
-            lastX = x;
-            lastY = y;
             setTimeout(() => {
                 if(draggedItem) draggedItem.classList.add('dragging');
             }, 0);
@@ -203,8 +196,6 @@ export function attachEventListeners() {
 
     function onDragMove(x, y) {
         if (!draggedItem) return;
-        lastX = x;
-        lastY = y;
         
         const container = draggedItem.closest('.card-body');
         if (!container) return;
@@ -217,10 +208,13 @@ export function attachEventListeners() {
         container.querySelectorAll('.item-container').forEach(el => el.classList.remove('drag-over'));
         if (afterElement) {
             afterElement.classList.add('drag-over');
+        } else {
+            // Si pas d'élément après, on est à la fin.
+            // On pourrait ajouter un indicateur à la fin du container si besoin.
         }
     }
 
-    function onDragEnd() {
+    function onDragEnd(event) {
         if (!draggedItem) return;
         
         const container = draggedItem.closest('.card[data-section-name]');
@@ -228,10 +222,14 @@ export function attachEventListeners() {
             const listName = container.dataset.sectionName;
             const idKey = listName === 'songs' ? 'songId' : 'id';
             const isHorizontal = listName === 'songs';
+
+            // Utilise les dernières coordonnées connues si event n'est pas un événement de souris
+            const clientX = event.clientX || (event.changedTouches && event.changedTouches[0].clientX);
+            const clientY = event.clientY || (event.changedTouches && event.changedTouches[0].clientY);
             
-            const afterElement = isHorizontal
-                ? getDragAfterElement(container.querySelector('.card-body'), lastX, '.item-container', true)
-                : getDragAfterElement(container.querySelector('.card-body'), lastY, '.item-container', false);
+            const afterElement = isHorizontal 
+                ? getDragAfterElement(container.querySelector('.card-body'), clientX, '.item-container', true)
+                : getDragAfterElement(container.querySelector('.card-body'), clientY, '.item-container', false);
             
             const draggedId = draggedItem.dataset.id;
             const targetId = afterElement ? afterElement.dataset.id : null;
@@ -244,41 +242,27 @@ export function attachEventListeners() {
             }
         }
         
+        container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
         draggedItem.classList.remove('dragging');
         draggedItem = null;
     }
 
-    // Listeners pour la Souris
-    editorContent.addEventListener('dragstart', e => onDragStart(e.target, e.clientX, e.clientY));
-    editorContent.addEventListener('dragover', e => {
-        e.preventDefault();
-        onDragMove(e.clientX, e.clientY);
-    });
-    editorContent.addEventListener('drop', onDragEnd);
-    editorContent.addEventListener('dragend', () => {
-        if (draggedItem) {
-            draggedItem.classList.remove('dragging');
-            draggedItem = null;
-        }
-    });
-
-    // Listeners pour le Tactile
-    editorContent.addEventListener('touchstart', e => {
-        onDragStart(e.target, e.touches[0].clientX, e.touches[0].clientY);
-    }, { passive: true });
-
+    // Listeners Souris
+    editorContent.addEventListener('dragstart', e => onDragStart(e.target));
+    editorContent.addEventListener('dragover', e => { e.preventDefault(); onDragMove(e.clientX, e.clientY); });
+    editorContent.addEventListener('drop', e => { e.preventDefault(); onDragEnd(e); });
+    
+    // Listeners Tactiles
+    editorContent.addEventListener('touchstart', e => onDragStart(e.target), { passive: true });
     editorContent.addEventListener('touchmove', e => {
         if (!draggedItem) return;
-        e.preventDefault();
+        e.preventDefault(); // Nécessaire pour le drag
         onDragMove(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: false });
-    
-    editorContent.addEventListener('touchend', onDragEnd);
+    editorContent.addEventListener('touchend', e => onDragEnd(e));
 
-    // Fonction de calcul de position améliorée
     function getDragAfterElement(container, coordinate, selector, isHorizontal) {
         const draggableElements = [...container.querySelectorAll(`${selector}:not(.dragging)`)];
-
         return draggableElements.reduce((closest, child) => {
             const box = child.getBoundingClientRect();
             const offset = isHorizontal 
